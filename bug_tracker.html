@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERP Bug Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #222535;
+    --border: #2e3148;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --accent: #6366f1;
+    --accent-dim: #312e81;
+    --red: #ef4444;
+    --red-dim: #3b1515;
+    --amber: #f59e0b;
+    --amber-dim: #3b2a0a;
+    --blue: #3b82f6;
+    --blue-dim: #0f2347;
+    --green: #22c55e;
+    --green-dim: #0f2e1a;
+    --gray: #6b7280;
+    --gray-dim: #1f2937;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; min-height: 100vh; }
+
+  /* Layout */
+  .shell { display: flex; height: 100vh; overflow: hidden; }
+  .sidebar { width: 220px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Sidebar */
+  .brand { padding: 20px 16px 16px; border-bottom: 1px solid var(--border); }
+  .brand-name { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--accent); letter-spacing: 0.5px; }
+  .brand-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .nav { padding: 12px 8px; flex: 1; overflow-y: auto; }
+  .nav-section { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; padding: 8px 8px 4px; }
+  .nav-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: var(--radius); cursor: pointer; margin-bottom: 1px; font-size: 13px; color: var(--muted); transition: all 0.15s; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--accent-dim); color: var(--accent); }
+  .nav-count { font-family: var(--mono); font-size: 10px; background: var(--surface2); padding: 1px 6px; border-radius: 999px; }
+  .nav-item.active .nav-count { background: var(--accent); color: #fff; }
+  .sidebar-footer { padding: 12px 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); }
+
+  /* Topbar */
+  .topbar { display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+  .topbar-title { font-weight: 600; font-size: 15px; flex: 1; }
+  .search-wrap { display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 0 12px; flex: 0 0 260px; }
+  .search-wrap input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; padding: 8px 0; width: 100%; font-family: var(--sans); }
+  .search-wrap input::placeholder { color: var(--muted); }
+  .filters { display: flex; gap: 8px; }
+  select { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 10px; font-size: 12px; font-family: var(--sans); outline: none; cursor: pointer; }
+  select:focus { border-color: var(--accent); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; font-family: var(--sans); transition: all 0.15s; white-space: nowrap; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #4f46e5; }
+  .btn-ghost { background: none; color: var(--muted); border-color: var(--border); }
+  .btn-ghost:hover { color: var(--text); background: var(--surface2); }
+  .btn-danger { background: none; color: var(--red); border-color: var(--red-dim); }
+  .btn-danger:hover { background: var(--red-dim); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* Stats row */
+  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+  .stat { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+  .stat-val { font-family: var(--mono); font-size: 24px; font-weight: 500; line-height: 1; }
+  .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .c-total { color: var(--text); }
+  .c-open { color: var(--red); }
+  .c-prog { color: var(--amber); }
+  .c-fix { color: var(--blue); }
+  .c-ver { color: var(--green); }
+
+  /* Bug list */
+  .list-area { flex: 1; overflow-y: auto; padding: 16px 24px; }
+  .list-header { display: grid; grid-template-columns: 90px 1fr 120px 80px 100px; gap: 12px; padding: 8px 14px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+  .bug-row { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 6px; overflow: hidden; transition: border-color 0.15s; }
+  .bug-row:hover { border-color: #3e4266; }
+  .bug-row.expanded { border-color: var(--accent); }
+  .bug-summary { display: grid; grid-template-columns: 90px 1fr 120px 80px 100px; gap: 12px; padding: 12px 14px; align-items: center; cursor: pointer; }
+  .bug-id { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .bug-title-cell { }
+  .bug-title-text { font-size: 13px; font-weight: 500; color: var(--text); }
+  .bug-module { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; font-family: var(--mono); white-space: nowrap; }
+  .badge::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%; }
+  .s-Open { background: var(--red-dim); color: var(--red); }
+  .s-Open::before { background: var(--red); }
+  .s-InProgress { background: var(--amber-dim); color: var(--amber); }
+  .s-InProgress::before { background: var(--amber); }
+  .s-Fixed { background: var(--blue-dim); color: var(--blue); }
+  .s-Fixed::before { background: var(--blue); }
+  .s-Verified { background: var(--green-dim); color: var(--green); }
+  .s-Verified::before { background: var(--green); }
+  .s-Closed { background: var(--gray-dim); color: var(--gray); }
+  .s-Closed::before { background: var(--gray); }
+  .bug-reporter { font-size: 12px; color: var(--muted); }
+  .bug-date { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .img-pill { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: var(--blue); background: var(--blue-dim); padding: 2px 7px; border-radius: 999px; margin-top: 3px; }
+
+  /* Detail panel */
+  .bug-detail { border-top: 1px solid var(--border); padding: 16px 20px; background: var(--bg); }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .detail-section { }
+  .detail-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 6px; }
+  .detail-val { font-size: 13px; color: var(--text); line-height: 1.6; white-space: pre-wrap; }
+  .detail-val.empty { color: var(--muted); font-style: italic; }
+  .imgs-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .img-box { }
+  .img-box-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 6px; }
+  .img-frame { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; min-height: 100px; display: flex; align-items: center; justify-content: center; }
+  .img-frame img { width: 100%; height: auto; display: block; cursor: zoom-in; max-height: 280px; object-fit: contain; }
+  .img-empty { font-size: 11px; color: var(--muted); padding: 20px; }
+  .detail-actions { display: flex; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); flex-wrap: wrap; align-items: center; }
+  .del-confirm { background: var(--red-dim); border: 1px solid var(--red); border-radius: var(--radius); padding: 10px 14px; font-size: 12px; color: var(--red); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+  .empty-state-text { font-size: 15px; margin-bottom: 6px; color: var(--text); }
+  .empty-state-sub { font-size: 13px; }
+
+  /* Modal overlay */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: flex-start; justify-content: center; z-index: 100; padding: 40px 20px; overflow-y: auto; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); width: 100%; max-width: 640px; padding: 24px; }
+  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { }
+  .form-group.full { grid-column: 1/-1; }
+  .form-group label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 5px; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); padding: 9px 12px; font-size: 13px; font-family: var(--sans); outline: none; transition: border-color 0.15s; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+  .form-group textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+  .img-upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .upload-zone { border: 1px dashed var(--border); border-radius: var(--radius); padding: 12px; text-align: center; transition: border-color 0.15s; }
+  .upload-zone:hover { border-color: var(--accent); }
+  .upload-zone-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 8px; }
+  .upload-zone img { width: 100%; max-height: 140px; object-fit: contain; border-radius: 6px; margin-bottom: 6px; }
+  .upload-zone input[type=file] { font-size: 11px; color: var(--muted); width: 100%; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+  /* Lightbox */
+  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 200; cursor: zoom-out; }
+  .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .hidden { display: none !important; }
+  .divider { width: 1px; height: 20px; background: var(--border); }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-name">ERP // BUGS</div>
+      <div class="brand-sub">Richie · Darren · Raymond</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Filter by status</div>
+      <div class="nav-item active" onclick="setStatusFilter('')" id="nav-all">All bugs <span class="nav-count" id="cnt-all">0</span></div>
+      <div class="nav-item" onclick="setStatusFilter('Open')" id="nav-open">Open <span class="nav-count" id="cnt-open">0</span></div>
+      <div class="nav-item" onclick="setStatusFilter('In Progress')" id="nav-prog">In Progress <span class="nav-count" id="cnt-prog">0</span></div>
+      <div class="nav-item" onclick="setStatusFilter('Fixed')" id="nav-fix">Fixed <span class="nav-count" id="cnt-fix">0</span></div>
+      <div class="nav-item" onclick="setStatusFilter('Verified')" id="nav-ver">Verified <span class="nav-count" id="cnt-ver">0</span></div>
+      <div class="nav-item" onclick="setStatusFilter('Closed')" id="nav-closed">Closed <span class="nav-count" id="cnt-clo">0</span></div>
+
+      <div class="nav-section" style="margin-top:12px">Filter by reporter</div>
+      <div class="nav-item" onclick="setReporterFilter('')" id="nav-r-all">All reporters</div>
+      <div class="nav-item" onclick="setReporterFilter('Richie')" id="nav-r-richie">Richie</div>
+      <div class="nav-item" onclick="setReporterFilter('Darren')" id="nav-r-darren">Darren</div>
+      <div class="nav-item" onclick="setReporterFilter('Raymond')" id="nav-r-raymond">Raymond</div>
+    </nav>
+    <div class="sidebar-footer">Finance Module QA v2</div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-label">All Bugs</div>
+      <div class="search-wrap">
+        <svg width="13" height="13" fill="none" stroke="#6b7280" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="search-input" placeholder="Search bugs..." oninput="applyFilters()">
+      </div>
+      <div class="filters">
+        <select id="filter-module" onchange="applyFilters()">
+          <option value="">All modules</option>
+          <option>Finance / Invoice</option><option>Finance / COA</option><option>Finance / Journal</option>
+          <option>Finance / AR Aging</option><option>Finance / AP Aging</option><option>Finance / Bank Recon</option>
+          <option>Finance / Petty Cash</option><option>Finance / Debit Note</option><option>Finance / Credit Note</option>
+          <option>Finance / Credit Limit</option><option>Inventory</option><option>Purchase</option>
+          <option>Sales</option><option>HR</option><option>Settings</option><option>Dashboard</option><option>Auth</option>
+        </select>
+      </div>
+      <div class="divider"></div>
+      <button class="btn btn-primary" onclick="openForm()">+ New Bug</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat"><div class="stat-val c-total" id="s-total">0</div><div class="stat-lbl">Total logged</div></div>
+      <div class="stat"><div class="stat-val c-open" id="s-open">0</div><div class="stat-lbl">Open</div></div>
+      <div class="stat"><div class="stat-val c-prog" id="s-prog">0</div><div class="stat-lbl">In progress</div></div>
+      <div class="stat"><div class="stat-val c-fix" id="s-fix">0</div><div class="stat-lbl">Fixed</div></div>
+      <div class="stat"><div class="stat-val c-ver" id="s-ver">0</div><div class="stat-lbl">Verified</div></div>
+    </div>
+
+    <!-- List -->
+    <div class="list-area">
+      <div class="list-header">
+        <span>ID</span><span>Title / Module</span><span>Status</span><span>Reporter</span><span>Date</span>
+      </div>
+      <div id="bug-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- New/Edit Modal -->
+<div class="overlay hidden" id="modal-overlay" onclick="overlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-title">
+      <span id="modal-title-text">Log New Bug</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕ Close</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Reported by</label>
+        <select id="f-reporter">
+          <option>Richie</option><option>Darren</option><option>Raymond</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date reported</label>
+        <input type="date" id="f-date">
+      </div>
+      <div class="form-group full">
+        <label>Module / Page</label>
+        <select id="f-module">
+          <option value="">Select module...</option>
+          <option>Finance / Invoice</option><option>Finance / COA</option><option>Finance / Journal</option>
+          <option>Finance / AR Aging</option><option>Finance / AP Aging</option><option>Finance / Bank Recon</option>
+          <option>Finance / Petty Cash</option><option>Finance / Debit Note</option><option>Finance / Credit Note</option>
+          <option>Finance / Credit Limit</option><option>Inventory</option><option>Purchase</option>
+          <option>Sales</option><option>HR</option><option>Settings</option><option>Dashboard</option><option>Auth</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Bug title</label>
+        <input type="text" id="f-title" placeholder="Short and specific — e.g. Credit limit not enforced on PUT /invoice">
+      </div>
+      <div class="form-group full">
+        <label>Description — what happened, expected behaviour, steps to reproduce</label>
+        <textarea id="f-desc" style="min-height:90px" placeholder="1. Go to...&#10;2. Do...&#10;3. Expected: ...  Actual: ..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="f-status">
+          <option>Open</option><option>In Progress</option><option>Fixed</option><option>Verified</option><option>Closed</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date resolved</label>
+        <input type="date" id="f-resolved">
+      </div>
+      <div class="form-group full">
+        <label>Fix description (file · function · what changed — fill after fixing)</label>
+        <textarea id="f-fix" style="min-height:70px" placeholder="e.g. Added credit limit check in invoiceService.ts createInvoice() — throws 422 if balance > limit. db push done."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Verified by</label>
+        <select id="f-verified-by">
+          <option value="">—</option><option>Richie</option><option>Darren</option><option>Raymond</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Notes / links</label>
+        <input type="text" id="f-notes" placeholder="Related bug IDs, Notion, Vercel link...">
+      </div>
+      <div class="form-group full">
+        <label>Screenshots (before & after)</label>
+        <div class="img-upload-grid">
+          <div class="upload-zone" id="before-zone">
+            <div class="upload-zone-lbl">Before</div>
+            <div id="before-preview"></div>
+            <input type="file" accept="image/*" onchange="handleImg(event,'before')" id="before-input">
+          </div>
+          <div class="upload-zone" id="after-zone">
+            <div class="upload-zone-lbl">After</div>
+            <div id="after-preview"></div>
+            <input type="file" accept="image/*" onchange="handleImg(event,'after')" id="after-input">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitForm()" id="submit-btn">Log Bug</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox hidden" id="lightbox" onclick="this.classList.add('hidden')">
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<script>
+const BUGS_KEY = 'erp-bugs-v3';
+const REPORTERS = ['Richie','Darren','Raymond'];
+const STATUSES = ['Open','In Progress','Fixed','Verified','Closed'];
+
+let state = { bugs: [], filter: { q:'', status:'', reporter:'', module:'' }, expandedId: null, expandedImgs: {}, editId: null, formBefore: null, formAfter: null, confirmDelId: null };
+
+// Storage
+async function loadBugs() { try { const r = await window.storage.get(BUGS_KEY); return r ? JSON.parse(r.value) : []; } catch(e) { return []; } }
+async function saveBugs() { try { await window.storage.set(BUGS_KEY, JSON.stringify(state.bugs)); } catch(e) {} }
+async function saveImg(id, t, data) { try { await window.storage.set('bug-img-'+id+'-'+t, data); } catch(e) {} }
+async function loadImgs(id) { let b=null,a=null; try{const r=await window.storage.get('bug-img-'+id+'-before');if(r)b=r.value;}catch(e){} try{const r=await window.storage.get('bug-img-'+id+'-after');if(r)a=r.value;}catch(e){} return{before:b,after:a}; }
+async function delImgs(id) { try{await window.storage.delete('bug-img-'+id+'-before');}catch(e){} try{await window.storage.delete('bug-img-'+id+'-after');}catch(e){} }
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmt(d){if(!d)return'—';try{return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return d;}}
+function sc(s){return(s||'').replace(/ /g,'');}
+function nextId(){const m=state.bugs.reduce((a,b)=>{const n=parseInt((b.id||'').replace('ERP-',''));return isNaN(n)?a:Math.max(a,n);},0);return'ERP-'+String(m+1).padStart(3,'0');}
+
+function getStats(){
+  const s={tot:0,open:0,prog:0,fix:0,ver:0,clo:0};
+  state.bugs.forEach(b=>{s.tot++;if(b.status==='Open')s.open++;else if(b.status==='In Progress')s.prog++;else if(b.status==='Fixed')s.fix++;else if(b.status==='Verified')s.ver++;else if(b.status==='Closed')s.clo++;});
+  return s;
+}
+function filteredBugs(){
+  const {q,status,reporter,module}=state.filter;
+  return state.bugs.filter(b=>{
+    if(q&&!(b.title+' '+b.description+' '+b.id).toLowerCase().includes(q.toLowerCase()))return false;
+    if(status&&b.status!==status)return false;
+    if(reporter&&b.reportedBy!==reporter)return false;
+    if(module&&b.module!==module)return false;
+    return true;
+  }).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+}
+
+function updateStats(){
+  const s=getStats();
+  document.getElementById('s-total').textContent=s.tot;
+  document.getElementById('s-open').textContent=s.open;
+  document.getElementById('s-prog').textContent=s.prog;
+  document.getElementById('s-fix').textContent=s.fix;
+  document.getElementById('s-ver').textContent=s.ver;
+  document.getElementById('cnt-all').textContent=s.tot;
+  document.getElementById('cnt-open').textContent=s.open;
+  document.getElementById('cnt-prog').textContent=s.prog;
+  document.getElementById('cnt-fix').textContent=s.fix;
+  document.getElementById('cnt-ver').textContent=s.ver;
+  document.getElementById('cnt-clo').textContent=s.clo;
+}
+
+function renderList(){
+  const bugs=filteredBugs();
+  const list=document.getElementById('bug-list');
+  if(!bugs.length){
+    list.innerHTML=`<div class="empty-state"><div class="empty-state-icon">◎</div><div class="empty-state-text">${state.bugs.length===0?'No bugs logged yet':'No bugs match your filters'}</div><div class="empty-state-sub">${state.bugs.length===0?'Click "+ New Bug" to start tracking':'Try adjusting the filters'}</div></div>`;
+    return;
+  }
+  list.innerHTML=bugs.map(bug=>renderBugRow(bug)).join('');
+}
+
+function renderBugRow(bug){
+  const exp=state.expandedId===bug.id;
+  const cls=sc(bug.status);
+  const imgs=state.expandedImgs[bug.id];
+  const nextS={'Open':'In Progress','In Progress':'Fixed','Fixed':'Verified','Verified':'Closed'}[bug.status];
+  const isDel=state.confirmDelId===bug.id;
+
+  let html=`<div class="bug-row${exp?' expanded':''}" id="row-${bug.id}">
+    <div class="bug-summary" onclick="toggleExpand('${bug.id}')">
+      <div class="bug-id">${esc(bug.id)}</div>
+      <div class="bug-title-cell">
+        <div class="bug-title-text">${esc(bug.title)}</div>
+        <div class="bug-module">${esc(bug.module||'—')}</div>
+        ${bug.hasBeforeImg||bug.hasAfterImg?'<div class="img-pill"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-6-6L5 21"/></svg> screenshots</div>':''}
+      </div>
+      <div><span class="badge s-${cls}">${bug.status}</span></div>
+      <div class="bug-reporter">${esc(bug.reportedBy)}</div>
+      <div class="bug-date">${fmt(bug.createdAt)}</div>
+    </div>`;
+
+  if(exp){
+    html+=`<div class="bug-detail">
+      <div class="detail-grid">
+        <div class="detail-section">
+          <div class="detail-lbl">Description</div>
+          <div class="detail-val ${bug.description?'':'empty'}">${bug.description?esc(bug.description):'Not provided'}</div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-lbl">Fix description</div>
+          <div class="detail-val ${bug.fixDescription?'':'empty'}">${bug.fixDescription?esc(bug.fixDescription):'Not yet fixed'}</div>
+        </div>
+      </div>`;
+
+    if(bug.verifiedBy||bug.notes){
+      html+=`<div class="detail-grid" style="margin-top:14px">`;
+      if(bug.verifiedBy) html+=`<div class="detail-section"><div class="detail-lbl">Verified by</div><div class="detail-val">${esc(bug.verifiedBy)} ${bug.resolvedAt?'· '+fmt(bug.resolvedAt):''}</div></div>`;
+      if(bug.notes) html+=`<div class="detail-section"><div class="detail-lbl">Notes</div><div class="detail-val">${esc(bug.notes)}</div></div>`;
+      html+=`</div>`;
+    }
+
+    if(bug.hasBeforeImg||bug.hasAfterImg){
+      html+=`<div class="imgs-row">`;
+      if(bug.hasBeforeImg){
+        html+=`<div class="img-box"><div class="img-box-lbl">Before</div><div class="img-frame">`;
+        html+=imgs&&imgs.before?`<img src="${imgs.before}" onclick="showLightbox('${bug.id}','before')" alt="Before">`:`<div class="img-empty">Loading...</div>`;
+        html+=`</div></div>`;
+      }
+      if(bug.hasAfterImg){
+        html+=`<div class="img-box"><div class="img-box-lbl">After</div><div class="img-frame">`;
+        html+=imgs&&imgs.after?`<img src="${imgs.after}" onclick="showLightbox('${bug.id}','after')" alt="After">`:`<div class="img-empty">Loading...</div>`;
+        html+=`</div></div>`;
+      }
+      html+=`</div>`;
+    }
+
+    html+=`<div class="detail-actions">`;
+    if(nextS) html+=`<button class="btn btn-ghost btn-sm" onclick="quickStatus('${bug.id}','${nextS}')">→ Mark "${nextS}"</button>`;
+    html+=`<button class="btn btn-ghost btn-sm" onclick="editBug('${bug.id}')">Edit</button>`;
+    if(!isDel){
+      html+=`<button class="btn btn-danger btn-sm" onclick="confirmDel('${bug.id}')">Delete</button>`;
+    }
+    html+=`</div>`;
+    if(isDel){
+      html+=`<div class="del-confirm">Delete ${bug.id} permanently? This cannot be undone.
+        <button class="btn btn-danger btn-sm" onclick="doDelete('${bug.id}')">Yes, delete</button>
+        <button class="btn btn-ghost btn-sm" onclick="cancelDel()">Cancel</button>
+      </div>`;
+    }
+    html+=`</div>`;
+  }
+  html+=`</div>`;
+  return html;
+}
+
+// Nav / filter actions
+function setStatusFilter(s){
+  state.filter.status=s;
+  // Update nav active
+  ['all','open','prog','fix','ver','closed'].forEach(k=>{document.getElementById('nav-'+k)?.classList.remove('active');});
+  const map={'':'all','Open':'open','In Progress':'prog','Fixed':'fix','Verified':'ver','Closed':'closed'};
+  document.getElementById('nav-'+(map[s]||'all'))?.classList.add('active');
+  const labels={'':'All Bugs','Open':'Open Bugs','In Progress':'In Progress','Fixed':'Fixed','Verified':'Verified','Closed':'Closed'};
+  document.getElementById('topbar-label').textContent=labels[s]||'All Bugs';
+  applyFilters();
+}
+
+function setReporterFilter(r){
+  state.filter.reporter=r;
+  ['all','richie','darren','raymond'].forEach(k=>{document.getElementById('nav-r-'+k)?.classList.remove('active');});
+  const map={'':'all','Richie':'richie','Darren':'darren','Raymond':'raymond'};
+  document.getElementById('nav-r-'+(map[r]||'all'))?.classList.add('active');
+  applyFilters();
+}
+
+function applyFilters(){
+  state.filter.q=document.getElementById('search-input')?.value||'';
+  state.filter.module=document.getElementById('filter-module')?.value||'';
+  updateStats();
+  renderList();
+}
+
+// Expand
+async function toggleExpand(id){
+  if(state.expandedId===id){state.expandedId=null;state.confirmDelId=null;renderList();return;}
+  state.expandedId=id;state.confirmDelId=null;renderList();
+  const bug=state.bugs.find(b=>b.id===id);
+  if(bug&&(bug.hasBeforeImg||bug.hasAfterImg)&&!state.expandedImgs[id]){
+    const imgs=await loadImgs(id);state.expandedImgs[id]=imgs;renderList();
+  }
+}
+
+// Status quick change
+async function quickStatus(id,ns){
+  const bug=state.bugs.find(b=>b.id===id);if(!bug)return;
+  bug.status=ns;
+  if((ns==='Verified'||ns==='Closed')&&!bug.resolvedAt)bug.resolvedAt=new Date().toISOString().split('T')[0];
+  await saveBugs();updateStats();renderList();
+}
+
+// Delete
+function confirmDel(id){state.confirmDelId=id;renderList();}
+function cancelDel(){state.confirmDelId=null;renderList();}
+async function doDelete(id){
+  state.bugs=state.bugs.filter(b=>b.id!==id);
+  if(state.expandedId===id)state.expandedId=null;
+  delete state.expandedImgs[id];
+  state.confirmDelId=null;
+  await delImgs(id);await saveBugs();updateStats();renderList();
+}
+
+// Form
+function openForm(){
+  state.editId=null;state.formBefore=null;state.formAfter=null;
+  document.getElementById('modal-title-text').textContent='Log New Bug';
+  document.getElementById('submit-btn').textContent='Log Bug';
+  document.getElementById('f-reporter').value='Richie';
+  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('f-module').value='';
+  document.getElementById('f-title').value='';
+  document.getElementById('f-desc').value='';
+  document.getElementById('f-status').value='Open';
+  document.getElementById('f-resolved').value='';
+  document.getElementById('f-fix').value='';
+  document.getElementById('f-verified-by').value='';
+  document.getElementById('f-notes').value='';
+  resetImgPreviews();
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('f-title').focus();
+}
+
+function editBug(id){
+  const bug=state.bugs.find(b=>b.id===id);if(!bug)return;
+  state.editId=id;state.formBefore=null;state.formAfter=null;
+  document.getElementById('modal-title-text').textContent='Edit · '+id;
+  document.getElementById('submit-btn').textContent='Save Changes';
+  document.getElementById('f-reporter').value=bug.reportedBy||'Richie';
+  document.getElementById('f-date').value=bug.createdAt||'';
+  document.getElementById('f-module').value=bug.module||'';
+  document.getElementById('f-title').value=bug.title||'';
+  document.getElementById('f-desc').value=bug.description||'';
+  document.getElementById('f-status').value=bug.status||'Open';
+  document.getElementById('f-resolved').value=bug.resolvedAt||'';
+  document.getElementById('f-fix').value=bug.fixDescription||'';
+  document.getElementById('f-verified-by').value=bug.verifiedBy||'';
+  document.getElementById('f-notes').value=bug.notes||'';
+  resetImgPreviews();
+  // Load existing images
+  if(bug.hasBeforeImg||bug.hasAfterImg){
+    loadImgs(id).then(imgs=>{
+      if(imgs.before){state.formBefore=imgs.before;showImgPreview('before',imgs.before);}
+      if(imgs.after){state.formAfter=imgs.after;showImgPreview('after',imgs.after);}
+    });
+  }
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+function closeModal(){document.getElementById('modal-overlay').classList.add('hidden');}
+function overlayClick(e){if(e.target===document.getElementById('modal-overlay'))closeModal();}
+
+function resetImgPreviews(){
+  ['before','after'].forEach(t=>{
+    const p=document.getElementById(t+'-preview');if(p)p.innerHTML='';
+    const i=document.getElementById(t+'-input');if(i){i.style.display='';i.value='';}
+  });
+}
+
+function showImgPreview(t,src){
+  const p=document.getElementById(t+'-preview');
+  const inp=document.getElementById(t+'-input');
+  if(p)p.innerHTML=`<img src="${src}" style="width:100%;max-height:120px;object-fit:contain;border-radius:6px;margin-bottom:6px"><button class="btn btn-ghost btn-sm" onclick="removeImg('${t}')">Remove</button>`;
+  if(inp)inp.style.display='none';
+}
+
+function handleImg(e,t){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const data=ev.target.result;
+    if(t==='before')state.formBefore=data;else state.formAfter=data;
+    showImgPreview(t,data);
+  };
+  r.readAsDataURL(f);
+}
+
+function removeImg(t){
+  if(t==='before')state.formBefore=null;else state.formAfter=null;
+  const p=document.getElementById(t+'-preview');if(p)p.innerHTML='';
+  const i=document.getElementById(t+'-input');if(i){i.style.display='';i.value='';}
+}
+
+async function submitForm(){
+  const title=document.getElementById('f-title')?.value?.trim();
+  if(!title){alert('Bug title is required.');return;}
+  const bug={
+    id:state.editId||nextId(),
+    title,
+    reportedBy:document.getElementById('f-reporter').value,
+    module:document.getElementById('f-module').value,
+    status:document.getElementById('f-status').value,
+    createdAt:document.getElementById('f-date').value||new Date().toISOString().split('T')[0],
+    description:document.getElementById('f-desc').value||'',
+    fixDescription:document.getElementById('f-fix').value||'',
+    verifiedBy:document.getElementById('f-verified-by').value||'',
+    resolvedAt:document.getElementById('f-resolved').value||'',
+    notes:document.getElementById('f-notes').value||'',
+    hasBeforeImg:!!state.formBefore,
+    hasAfterImg:!!state.formAfter,
+  };
+  if(state.editId){
+    const i=state.bugs.findIndex(b=>b.id===state.editId);
+    if(i>=0)state.bugs[i]=bug;
+    delete state.expandedImgs[bug.id];
+    if(!state.formBefore)try{await window.storage.delete('bug-img-'+bug.id+'-before');}catch(e){}
+    if(!state.formAfter)try{await window.storage.delete('bug-img-'+bug.id+'-after');}catch(e){}
+  } else {
+    state.bugs.unshift(bug);
+  }
+  if(state.formBefore)await saveImg(bug.id,'before',state.formBefore);
+  if(state.formAfter)await saveImg(bug.id,'after',state.formAfter);
+  await saveBugs();
+  closeModal();updateStats();renderList();
+}
+
+function showLightbox(id,t){
+  const imgs=state.expandedImgs[id];if(!imgs)return;
+  const src=t==='before'?imgs.before:imgs.after;if(!src)return;
+  document.getElementById('lightbox-img').src=src;
+  document.getElementById('lightbox').classList.remove('hidden');
+}
+
+async function init(){
+  state.bugs=await loadBugs();
+  updateStats();renderList();
+}
+init();
+</script>
+</body>
+</html>
