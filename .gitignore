@@ -1,0 +1,4 @@
+node_modules/
+._*
+setup-db.mjs
+.vercel

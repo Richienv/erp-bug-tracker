@@ -1049,13 +1049,13 @@
       /* Upload screenshot if exists */
       if (screenshotFile) {
         const fileName = `bugs/${Date.now()}.png`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { data: uploadData, error: uploadError } = await sb.storage
           .from('screenshots')
           .upload(fileName, screenshotFile, { contentType: screenshotFile.type, upsert: false });
 
         if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = sb.storage
           .from('screenshots')
           .getPublicUrl(fileName);
 
@@ -1072,7 +1072,7 @@
         severity: 'Medium'
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from('bugs')
         .insert(bugData)
         .select()
@@ -1118,15 +1118,15 @@
       let screenshot_url = null;
       if (file) {
         const fileName = `bugs/${Date.now()}.png`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { data: uploadData, error: uploadError } = await sb.storage
           .from('screenshots')
           .upload(fileName, file, { contentType: file.type, upsert: false });
         if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from('screenshots').getPublicUrl(fileName);
+        const { data: urlData } = sb.storage.from('screenshots').getPublicUrl(fileName);
         screenshot_url = urlData.publicUrl;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from('bugs')
         .insert({ title, module: mod || null, reporter: currentName, screenshot_url, status: 'Open', severity: 'Medium' })
         .select()
@@ -1148,7 +1148,7 @@
      6. Feed Rendering
      ============================================ */
   async function loadBugs() {
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from('bugs')
       .select('*')
       .eq('reporter', currentName)
@@ -1268,10 +1268,10 @@
 
   function setupRealtime() {
     if (channel) {
-      supabase.removeChannel(channel);
+      sb.removeChannel(channel);
     }
 
-    channel = supabase.channel('reporter-bugs')
+    channel = sb.channel('reporter-bugs')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',

@@ -644,7 +644,7 @@
 
     // ---- Fetch Bugs ----
     async function fetchBugs() {
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from('bugs')
         .select('*')
         .order('created_at', { ascending: false });
@@ -827,7 +827,7 @@
       renderStats();
       if (selectedBugId === bugId) renderDetail(bug);
 
-      const { error } = await supabase.from('bugs').update(updates).eq('id', bugId);
+      const { error } = await sb.from('bugs').update(updates).eq('id', bugId);
       if (error) {
         showToast('Failed to move bug', true);
         bug.status = oldStatus;
@@ -848,7 +848,7 @@
       renderBoard();
       if (selectedBugId === bugId) renderDetail(bug);
 
-      const { error } = await supabase.from('bugs').update({ severity: next }).eq('id', bugId);
+      const { error } = await sb.from('bugs').update({ severity: next }).eq('id', bugId);
       if (error) {
         showToast('Failed to update severity', true);
       } else {
@@ -1150,7 +1150,7 @@
           const newTitle = input.value.trim();
           if (newTitle && newTitle !== bug.title) {
             bug.title = newTitle;
-            const { error } = await supabase.from('bugs').update({ title: newTitle }).eq('id', bug.id);
+            const { error } = await sb.from('bugs').update({ title: newTitle }).eq('id', bug.id);
             if (error) showToast('Failed to save title', true);
             else renderBoard();
           }
@@ -1204,7 +1204,7 @@
         fixSaved.style.opacity = '0';
         fixTimer = setTimeout(async () => {
           bug.fix_notes = fixTextarea.value;
-          const { error } = await supabase.from('bugs').update({ fix_notes: fixTextarea.value }).eq('id', bug.id);
+          const { error } = await sb.from('bugs').update({ fix_notes: fixTextarea.value }).eq('id', bug.id);
           if (!error) {
             fixSaved.style.opacity = '1';
             setTimeout(() => fixSaved.style.opacity = '0', 1500);
@@ -1219,7 +1219,7 @@
       const verifiedSaved = document.getElementById('verified-saved');
       verifiedSelect.addEventListener('change', async () => {
         bug.verified_by = verifiedSelect.value || null;
-        const { error } = await supabase.from('bugs').update({ verified_by: bug.verified_by }).eq('id', bug.id);
+        const { error } = await sb.from('bugs').update({ verified_by: bug.verified_by }).eq('id', bug.id);
         if (!error) {
           verifiedSaved.style.opacity = '1';
           setTimeout(() => verifiedSaved.style.opacity = '0', 1500);
@@ -1234,7 +1234,7 @@
       notesInput.addEventListener('blur', async () => {
         if (notesInput.value !== (bug.notes || '')) {
           bug.notes = notesInput.value;
-          const { error } = await supabase.from('bugs').update({ notes: bug.notes }).eq('id', bug.id);
+          const { error } = await sb.from('bugs').update({ notes: bug.notes }).eq('id', bug.id);
           if (!error) {
             notesSaved.style.opacity = '1';
             setTimeout(() => notesSaved.style.opacity = '0', 1500);
@@ -1256,7 +1256,7 @@
         deleteBtn.style.display = '';
       });
       document.getElementById('delete-yes').addEventListener('click', async () => {
-        const { error } = await supabase.from('bugs').delete().eq('id', bug.id);
+        const { error } = await sb.from('bugs').delete().eq('id', bug.id);
         if (error) {
           showToast('Failed to delete', true);
           return;
@@ -1466,7 +1466,7 @@
 
     // ---- Real-Time ----
     function setupRealtime() {
-      supabase.channel('fixer-bugs')
+      sb.channel('fixer-bugs')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bugs' }, (payload) => {
           const newBug = payload.new;
           // Avoid duplicates
