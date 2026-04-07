@@ -131,12 +131,13 @@ Single-column layout. No sidebar. Everything lives in a top nav + table + option
 | `img-pill` screenshot indicator | Replaced by subtle paperclip icon on row |
 | IBM Plex fonts | Replaced by Inter + JetBrains Mono |
 | Dark theme variables | Full light-only theme |
+| Reporter filter tabs | Search bar extended to match reporter name — type "Richie" to filter |
 
 ---
 
 ## What Stays the Same
 
-- All JS logic (storage, filtering, sorting, form handling) — untouched
+- All JS logic (storage, filtering, sorting, form handling) — untouched except: search now also matches `reportedBy` field
 - `window.storage` API for persistence
 - `BUGS_KEY`, data shape, bug ID format (`ERP-XXX`)
 - All form fields and module list
