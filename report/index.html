@@ -10,11 +10,11 @@
    Reporter View — Page Styles
    ============================================ */
 
-/* ---- Identity Picker ---- */
+/* ---- Login Screen ---- */
 .identity-picker {
   position: fixed;
   inset: 0;
-  background: var(--bg-secondary);
+  background: #FFFFFF;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -28,53 +28,80 @@
   pointer-events: none;
 }
 
-.identity-picker h1 {
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 8px;
-  color: var(--text-primary);
+.login-form {
+  width: 100%;
+  max-width: 360px;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.identity-picker p {
+.login-form h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.login-form .login-sub {
   font-size: 16px;
   color: var(--text-secondary);
-  margin-bottom: 36px;
-}
-
-.identity-cards {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.identity-card {
-  width: 180px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 32px 20px;
+  margin-bottom: 32px;
   text-align: center;
-  cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 
-.identity-card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-4px);
-}
-
-.identity-card .icon {
-  font-size: 36px;
-  margin-bottom: 12px;
-  display: block;
-}
-
-.identity-card .name {
-  font-size: 24px;
-  font-weight: 700;
+.login-select {
+  width: 100%;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 16px;
+  font-family: var(--font);
   color: var(--text-primary);
+  background: var(--bg);
+  padding: 0 16px;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23AEAEB2' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.login-select:focus {
+  border-color: var(--blue);
+}
+
+.login-select.placeholder {
+  color: var(--text-tertiary);
+}
+
+.login-btn {
+  width: 100%;
+  height: 48px;
+  margin-top: 16px;
+  background: #1D1D1F;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.login-btn:hover:not(:disabled) {
+  background: #000000;
+}
+
+.login-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 /* ---- Header ---- */
@@ -88,8 +115,8 @@
 }
 
 .greeting {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
   color: var(--text-primary);
   cursor: pointer;
   position: relative;
@@ -174,7 +201,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
-  padding: 20px;
+  padding: 24px;
 }
 
 .title-input {
@@ -203,7 +230,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-top: 14px;
+  margin-top: 16px;
   padding: 10px 16px;
   font-size: 15px;
   font-family: var(--font);
@@ -332,7 +359,7 @@
 
 /* ---- Screenshot Drop Zone ---- */
 .drop-zone {
-  margin-top: 14px;
+  margin-top: 16px;
   height: 150px;
   border: 2px dashed var(--border);
   border-radius: var(--radius);
@@ -408,7 +435,7 @@
 .submit-btn {
   width: 100%;
   height: 48px;
-  margin-top: 14px;
+  margin-top: 16px;
   background: var(--blue);
   color: #fff;
   border: none;
@@ -429,7 +456,9 @@
 }
 
 .submit-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
+  background: var(--border);
+  color: var(--text-tertiary);
   cursor: not-allowed;
 }
 
@@ -437,23 +466,23 @@
 .feed-area {
   max-width: 640px;
   margin: 0 auto;
-  padding: 28px 24px 40px;
+  padding: 32px 24px 48px;
 }
 
 .feed-heading {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 /* ---- Bug Card ---- */
 .bug-card {
   background: var(--bg);
-  border: 1px solid #E5E5EA;
+  border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
   border-radius: 14px;
-  padding: 16px;
+  padding: 20px;
   margin-bottom: 8px;
   cursor: pointer;
   position: relative;
@@ -472,7 +501,7 @@
 }
 
 .bug-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
   flex: 1;
@@ -506,6 +535,9 @@
 }
 
 .status-badge {
+  padding: 3px 10px;
+  font-size: 12px;
+  border-radius: 999px;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -515,11 +547,11 @@
 
 .bug-thumb {
   position: absolute;
-  bottom: 16px;
-  right: 16px;
+  bottom: 20px;
+  right: 20px;
   width: 40px;
   height: 40px;
-  border-radius: 6px;
+  border-radius: 8px;
   object-fit: cover;
   border: 1px solid var(--border-light);
 }
@@ -655,6 +687,64 @@
   object-fit: contain;
 }
 
+/* ---- Date Groups ---- */
+.date-group {
+  margin-bottom: 8px;
+}
+
+.date-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.date-group-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-group-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.date-group-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  background: var(--bg-secondary);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.date-group-chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--text-tertiary);
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.date-group.collapsed .date-group-chevron {
+  transform: rotate(-90deg);
+}
+
+.date-group-body {
+  max-height: 5000px;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.date-group.collapsed .date-group-body {
+  max-height: 0;
+}
+
 /* ---- Mobile ---- */
 @media (max-width: 639px) {
   .drop-zone {
@@ -672,25 +762,21 @@
   .feed-area {
     padding: 24px 20px 40px;
   }
-
-  .identity-card {
-    width: 150px;
-    padding: 24px 16px;
-  }
-
-  .identity-card .name {
-    font-size: 20px;
-  }
 }
 </style>
 </head>
 <body>
 
-<!-- Identity Picker -->
+<!-- Login Screen -->
 <div class="identity-picker" id="identity-picker">
-  <h1>Who are you?</h1>
-  <p>Select your identity to start reporting bugs.</p>
-  <div class="identity-cards" id="identity-cards"></div>
+  <div class="login-form">
+    <h1>Bug Tracker</h1>
+    <p class="login-sub">Sign in to continue</p>
+    <select class="login-select placeholder" id="login-select">
+      <option value="" disabled selected>Your name</option>
+    </select>
+    <button class="login-btn" id="login-btn" disabled>Continue</button>
+  </div>
 </div>
 
 <!-- Offline Banner -->
@@ -779,7 +865,8 @@
      ============================================ */
   const $ = (id) => document.getElementById(id);
   const pickerEl        = $('identity-picker');
-  const pickerCards     = $('identity-cards');
+  const loginSelect     = $('login-select');
+  const loginBtn        = $('login-btn');
   const mainView        = $('main-view');
   const greetingEl      = $('greeting');
   const greetingText    = $('greeting-text');
@@ -807,20 +894,22 @@
   /* ============================================
      1. Identity Picker
      ============================================ */
-  const emojis = { Richie: '\uD83D\uDE80', Darren: '\uD83D\uDD25', Raymond: '\u26A1' };
-
   function buildPicker() {
-    pickerCards.innerHTML = REPORTERS.map(name => `
-      <div class="identity-card" data-name="${esc(name)}">
-        <span class="icon">${emojis[name] || '\uD83D\uDC64'}</span>
-        <span class="name">${esc(name)}</span>
-      </div>
-    `).join('');
+    REPORTERS.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      loginSelect.appendChild(opt);
+    });
 
-    pickerCards.addEventListener('click', (e) => {
-      const card = e.target.closest('.identity-card');
-      if (!card) return;
-      currentName = card.dataset.name;
+    loginSelect.addEventListener('change', () => {
+      loginBtn.disabled = !loginSelect.value;
+      loginSelect.classList.toggle('placeholder', !loginSelect.value);
+    });
+
+    loginBtn.addEventListener('click', () => {
+      if (!loginSelect.value) return;
+      currentName = loginSelect.value;
       localStorage.setItem('reporter-name', currentName);
       pickerEl.classList.add('hidden');
       setTimeout(() => { pickerEl.style.display = 'none'; }, 300);
@@ -869,12 +958,18 @@
   /* ============================================
      2. Module Picker
      ============================================ */
+  function getModuleDisplayName(group, mod) {
+    if (group === 'Finance') return 'Finance / ' + mod;
+    return mod;
+  }
+
   function buildModuleList(container, isMobileSheet) {
     let html = '';
     for (const [group, modules] of Object.entries(MODULES)) {
       html += `<div class="module-section-header">${esc(group.toUpperCase())}</div>`;
       modules.forEach(mod => {
-        html += `<div class="module-item" data-module="${esc(mod)}">${esc(mod)}</div>`;
+        const fullName = getModuleDisplayName(group, mod);
+        html += `<div class="module-item" data-module="${esc(fullName)}">${esc(fullName)}</div>`;
       });
     }
     container.innerHTML = html;
@@ -1165,6 +1260,32 @@
     renderFeed();
   }
 
+  /* ---- Date grouping helpers ---- */
+  function getDateKey(dateStr) {
+    const d = new Date(dateStr);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().split('T')[0];
+  }
+
+  function getDateLabel(dateKey) {
+    const today = new Date();
+    const todayKey = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString().split('T')[0];
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate()).toISOString().split('T')[0];
+
+    if (dateKey === todayKey) return 'Today';
+    if (dateKey === yesterdayKey) return 'Yesterday';
+
+    const d = new Date(dateKey + 'T12:00:00');
+    const dayName = d.toLocaleDateString('en-GB', { weekday: 'long' });
+    const dayNum = d.getDate();
+    const monthName = d.toLocaleDateString('en-GB', { month: 'short' });
+    return `${dayName}, ${dayNum} ${monthName}`;
+  }
+
+  /* Track collapsed state across re-renders */
+  const collapsedGroups = new Set();
+
   function renderFeed(newCardId) {
     if (bugs.length === 0) {
       feedEl.innerHTML = `
@@ -1183,13 +1304,52 @@
       return;
     }
 
-    feedEl.innerHTML = bugs.map(bug => renderCard(bug, bug.id === newCardId)).join('');
+    /* Group bugs by date */
+    const grouped = new Map();
+    bugs.forEach(bug => {
+      const key = getDateKey(bug.created_at);
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(bug);
+    });
+
+    const chevronSvg = '<svg class="date-group-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>';
+
+    let html = '';
+    for (const [dateKey, dateBugs] of grouped) {
+      const label = getDateLabel(dateKey);
+      const isCollapsed = collapsedGroups.has(dateKey);
+      html += `<div class="date-group ${isCollapsed ? 'collapsed' : ''}" data-date-key="${dateKey}">`;
+      html += `<div class="date-group-header">`;
+      html += `<div class="date-group-left"><span class="date-group-label">${esc(label)}</span><span class="date-group-count">${dateBugs.length}</span></div>`;
+      html += chevronSvg;
+      html += `</div>`;
+      html += `<div class="date-group-body">`;
+      html += dateBugs.map(bug => renderCard(bug, bug.id === newCardId)).join('');
+      html += `</div></div>`;
+    }
+
+    feedEl.innerHTML = html;
+
+    /* Attach date group toggle */
+    feedEl.querySelectorAll('.date-group-header').forEach(header => {
+      header.addEventListener('click', () => {
+        const group = header.closest('.date-group');
+        const key = group.dataset.dateKey;
+        if (collapsedGroups.has(key)) {
+          collapsedGroups.delete(key);
+          group.classList.remove('collapsed');
+        } else {
+          collapsedGroups.add(key);
+          group.classList.add('collapsed');
+        }
+      });
+    });
 
     /* Attach card event listeners */
     feedEl.querySelectorAll('.bug-card').forEach(card => {
       card.addEventListener('click', (e) => {
-        /* Don't toggle if clicking lightbox trigger or retry */
-        if (e.target.closest('.expand-screenshot') || e.target.closest('.sync-error button')) return;
+        /* Don't toggle if clicking lightbox trigger or retry or group header */
+        if (e.target.closest('.expand-screenshot') || e.target.closest('.sync-error button') || e.target.closest('.date-group-header')) return;
         const id = card.dataset.id;
         expandedId = expandedId === id ? null : id;
         renderFeed();
