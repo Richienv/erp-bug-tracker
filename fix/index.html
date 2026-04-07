@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bug Tracker - Fixer View</title>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <style>
+    /* ============================================
+       Fixer View — Kanban Layout
+       ============================================ */
+
+    /* --- Shell --- */
+    .fixer-shell { display: flex; height: 100vh; overflow: hidden; }
+
+    /* --- Left Rail --- */
+    .rail {
+      width: 240px; border-right: 1px solid var(--border); background: var(--bg);
+      display: flex; flex-direction: column; flex-shrink: 0;
+      transition: width 0.25s ease; overflow: hidden; position: relative; z-index: 10;
+    }
+    .rail.collapsed { width: 48px; }
+    .rail.collapsed .rail-inner { opacity: 0; pointer-events: none; }
+    .rail.collapsed .rail-collapsed-stats { opacity: 1; pointer-events: auto; }
+    .rail-inner { transition: opacity 0.2s ease; }
+
+    .rail-header {
+      padding: 20px 16px; border-bottom: 1px solid var(--border);
+      font-size: 16px; font-weight: 600; white-space: nowrap; display: flex;
+      align-items: center; gap: 10px; min-height: 61px;
+    }
+    .rail-header svg { flex-shrink: 0; }
+
+    /* Collapsed stats (vertical numbers) */
+    .rail-collapsed-stats {
+      position: absolute; top: 61px; left: 0; width: 48px;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+      padding: 16px 0; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+    }
+    .rail-collapsed-stat {
+      display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer;
+    }
+    .rail-collapsed-stat .c-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .rail-collapsed-stat .c-num { font-family: var(--font-mono); font-size: 14px; font-weight: 600; }
+
+    /* Stats section */
+    .stats-section { padding: 12px 16px; }
+    .stat-row {
+      display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+      border-radius: var(--radius-sm); cursor: pointer; transition: background 0.15s ease;
+      white-space: nowrap;
+    }
+    .stat-row:hover { background: var(--bg-secondary); }
+    .stat-row.active { background: var(--blue-bg); }
+    .stat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .stat-count { font-family: var(--font-mono); font-size: 22px; font-weight: 600; min-width: 28px; }
+    .stat-label { font-size: 14px; color: var(--text-secondary); }
+
+    /* Filters */
+    .filters-section {
+      padding: 12px 16px; border-top: 1px solid var(--border);
+      flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
+    }
+    .filter-search {
+      position: relative; width: 100%;
+    }
+    .filter-search input {
+      width: 100%; padding: 8px 12px 8px 32px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); font-size: 13px; font-family: var(--font);
+      background: var(--bg); outline: none; transition: border-color 0.2s ease;
+    }
+    .filter-search input:focus { border-color: var(--blue); }
+    .filter-search svg {
+      position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      color: var(--text-tertiary); pointer-events: none;
+    }
+
+    /* Module dropdown */
+    .module-dropdown { position: relative; }
+    .module-trigger {
+      width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); font-size: 13px; font-family: var(--font);
+      background: var(--bg); cursor: pointer; display: flex; align-items: center;
+      justify-content: space-between; color: var(--text-primary);
+    }
+    .module-trigger:hover { border-color: var(--blue); }
+    .module-popover {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-lg); z-index: 50; max-height: 280px; overflow-y: auto;
+      display: none;
+    }
+    .module-popover.open { display: block; }
+    .module-group-label {
+      padding: 8px 12px 4px; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; color: var(--text-tertiary); letter-spacing: 0.5px;
+    }
+    .module-option {
+      padding: 6px 12px; font-size: 13px; cursor: pointer; transition: background 0.1s ease;
+    }
+    .module-option:hover { background: var(--blue-bg); }
+    .module-option.active { background: var(--blue-bg); color: var(--blue); font-weight: 500; }
+
+    /* Pills */
+    .pill-group { display: flex; flex-wrap: wrap; gap: 4px; }
+    .pill-group-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      color: var(--text-tertiary); letter-spacing: 0.5px; margin-bottom: 4px; width: 100%;
+    }
+    .pill {
+      padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: all 0.15s ease; border: none;
+      background: var(--gray-bg); color: var(--text-secondary); font-family: var(--font);
+    }
+    .pill:hover { background: var(--border); }
+    .pill.active { background: var(--blue); color: #fff; }
+
+    /* Active filter chips */
+    .active-filters { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+    .active-filters:empty { display: none; }
+    .filter-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: 999px; font-size: 11px;
+      background: var(--blue-bg); color: var(--blue); font-weight: 500;
+    }
+    .filter-chip-x {
+      cursor: pointer; font-size: 13px; line-height: 1;
+      opacity: 0.7; transition: opacity 0.15s;
+    }
+    .filter-chip-x:hover { opacity: 1; }
+    .clear-all {
+      font-size: 11px; color: var(--blue); cursor: pointer;
+      text-decoration: underline; background: none; border: none; font-family: var(--font);
+    }
+
+    /* Collapse button */
+    .rail-collapse-btn {
+      padding: 12px 16px; border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--text-tertiary); font-size: 16px;
+      transition: color 0.15s; background: none; border: none; border-top: 1px solid var(--border);
+      font-family: var(--font-mono); width: 100%;
+    }
+    .rail-collapse-btn:hover { color: var(--text-primary); }
+
+    /* --- Board Area --- */
+    .board-area {
+      flex: 1; display: flex; overflow-x: auto; background: var(--bg-secondary);
+      padding: 16px; gap: 12px; transition: all 0.25s ease;
+    }
+
+    .kanban-column {
+      flex-shrink: 0; width: 280px; min-width: 260px; height: 100%;
+      display: flex; flex-direction: column; border-radius: var(--radius); overflow: hidden;
+    }
+    .column-header {
+      position: sticky; top: 0; padding: 12px 14px; background: var(--bg-secondary);
+      display: flex; align-items: center; justify-content: space-between; z-index: 2;
+    }
+    .column-title {
+      font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+    }
+    .column-count {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px;
+      background: var(--gray-bg); font-size: 12px; font-weight: 600;
+      font-family: var(--font-mono); color: var(--text-secondary);
+    }
+    .column-body {
+      flex: 1; padding: 4px; display: flex; flex-direction: column; gap: 8px;
+      overflow-y: auto; min-height: 80px;
+    }
+    .column-body.drag-over {
+      border: 2px dashed var(--blue); background: var(--blue-bg);
+      border-radius: var(--radius-sm);
+    }
+    .column-empty {
+      border: 2px dashed var(--border); border-radius: var(--radius-sm);
+      padding: 24px 16px; text-align: center; font-size: 13px;
+      color: var(--text-tertiary); margin: 4px;
+    }
+
+    /* --- Kanban Cards --- */
+    .kanban-card {
+      padding: 12px; border-radius: 10px; cursor: pointer; position: relative;
+      transition: box-shadow 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
+      user-select: none;
+    }
+    .kanban-card.dragging { opacity: 0.5; }
+    .kanban-card.focused { box-shadow: 0 0 0 2px var(--blue); }
+    .kanban-card.card-enter {
+      animation: cardSlideDown 0.3s ease forwards;
+    }
+    @keyframes cardSlideDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-top {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .card-id { font-family: var(--font-mono); font-size: 12px; color: var(--text-tertiary); }
+    .card-time { font-size: 12px; color: var(--text-tertiary); }
+
+    .card-title {
+      font-size: 14px; font-weight: 600; margin: 6px 0;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden; line-height: 1.35;
+    }
+
+    .card-bottom {
+      display: flex; align-items: center; gap: 6px; font-size: 12px;
+    }
+    .card-module {
+      background: var(--gray-bg); padding: 2px 6px; border-radius: 4px;
+      font-size: 11px; color: var(--text-secondary); white-space: nowrap;
+    }
+    .severity-dot {
+      width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+      cursor: pointer; flex-shrink: 0; transition: transform 0.15s ease;
+    }
+    .severity-dot:hover { transform: scale(1.4); }
+    .card-reporter { color: var(--text-tertiary); margin-left: auto; white-space: nowrap; }
+    .card-thumb {
+      position: absolute; bottom: 10px; right: 10px; width: 28px; height: 24px;
+      border-radius: 4px; object-fit: cover; opacity: 0.8;
+    }
+
+    /* --- Detail Panel --- */
+    .detail-panel {
+      width: 0; overflow: hidden; border-left: 1px solid var(--border);
+      background: var(--bg); transition: width 0.25s ease; flex-shrink: 0;
+    }
+    .detail-panel.open { width: 400px; overflow-y: auto; }
+
+    .detail-inner { width: 400px; padding: 20px; }
+
+    .detail-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;
+    }
+    .detail-bug-id { font-family: var(--font-mono); font-size: 14px; color: var(--text-secondary); }
+    .detail-close {
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--border); background: transparent; border-radius: var(--radius-sm);
+      cursor: pointer; color: var(--text-secondary); transition: all 0.15s ease; font-size: 16px;
+    }
+    .detail-close:hover { background: var(--bg-secondary); color: var(--text-primary); }
+
+    .detail-title {
+      font-size: 18px; font-weight: 600; line-height: 1.3; margin-bottom: 12px;
+      cursor: pointer; padding: 4px; border-radius: 4px; transition: background 0.15s;
+      min-height: 26px;
+    }
+    .detail-title:hover { background: var(--bg-secondary); }
+    .detail-title-input {
+      width: 100%; font-size: 18px; font-weight: 600; line-height: 1.3;
+      border: 1px solid var(--blue); border-radius: 4px; padding: 4px 6px;
+      font-family: var(--font); outline: none; margin-bottom: 12px;
+    }
+
+    .detail-meta {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px;
+    }
+    .meta-item {
+      font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 4px;
+    }
+    .meta-pill {
+      background: var(--gray-bg); padding: 2px 8px; border-radius: 4px; font-size: 12px;
+    }
+
+    /* Screenshot */
+    .detail-screenshot { margin-top: 16px; }
+    .detail-screenshot img {
+      width: 100%; max-height: 300px; object-fit: contain; border-radius: 10px;
+      cursor: zoom-in; border: 1px solid var(--border);
+    }
+
+    /* Status Stepper */
+    .status-stepper {
+      margin-top: 20px; display: flex; align-items: center; gap: 0;
+    }
+    .step-btn {
+      flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 600;
+      border: none; cursor: pointer; text-align: center; transition: all 0.15s ease;
+      font-family: var(--font); position: relative; white-space: nowrap;
+    }
+    .step-btn:first-child { border-radius: 6px 0 0 6px; }
+    .step-btn:last-child { border-radius: 0 6px 6px 0; }
+    .step-btn.filled { background: var(--blue); color: #fff; }
+    .step-btn.unfilled { background: var(--gray-bg); color: var(--text-secondary); }
+    .step-btn:hover { filter: brightness(0.95); }
+    .step-line {
+      width: 1px; height: 20px; background: rgba(255,255,255,0.3); flex-shrink: 0;
+    }
+
+    /* Reopen confirm */
+    .reopen-popover {
+      position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+      background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-lg); padding: 12px; z-index: 60; white-space: nowrap;
+      min-width: 180px; text-align: center;
+    }
+    .reopen-popover::after {
+      content: ''; position: absolute; top: 100%; left: 50%;
+      transform: translateX(-50%); border: 6px solid transparent;
+      border-top-color: var(--border);
+    }
+    .reopen-text { font-size: 13px; margin-bottom: 8px; color: var(--text-primary); }
+    .reopen-actions { display: flex; gap: 6px; justify-content: center; }
+
+    /* Fix notes */
+    .detail-section { margin-top: 20px; }
+    .detail-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      color: var(--text-tertiary); letter-spacing: 0.5px; margin-bottom: 6px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .saved-indicator {
+      font-size: 11px; color: var(--green); font-weight: 500;
+      text-transform: none; letter-spacing: 0; opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .detail-textarea {
+      width: 100%; min-height: 100px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px; font-size: 14px;
+      font-family: var(--font); outline: none; resize: vertical;
+      transition: border-color 0.2s ease;
+    }
+    .detail-textarea:focus { border-color: var(--blue); }
+
+    .detail-select {
+      width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); font-size: 13px; font-family: var(--font);
+      background: var(--bg); outline: none; cursor: pointer;
+    }
+    .detail-select:focus { border-color: var(--blue); }
+
+    .detail-input {
+      width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); font-size: 13px; font-family: var(--font);
+      background: var(--bg); outline: none;
+    }
+    .detail-input:focus { border-color: var(--blue); }
+
+    /* Delete section */
+    .delete-section {
+      margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);
+    }
+    .btn-delete-ghost {
+      background: transparent; color: var(--red); border: 1px solid var(--red);
+      padding: 8px 16px; border-radius: var(--radius-sm); cursor: pointer;
+      font-size: 13px; font-weight: 500; font-family: var(--font);
+      transition: all 0.15s ease;
+    }
+    .btn-delete-ghost:hover { background: var(--red-bg); }
+    .delete-confirm {
+      display: none; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px;
+    }
+    .delete-confirm.show { display: flex; }
+
+    /* --- Empty Board --- */
+    .board-empty {
+      display: none; flex: 1; align-items: center; justify-content: center;
+      flex-direction: column; gap: 12px; color: var(--text-secondary);
+    }
+    .board-empty.show { display: flex; }
+    .board-empty svg { color: var(--green); }
+    .board-empty p { font-size: 17px; }
+
+    /* --- Mobile Move Sheet --- */
+    .move-sheet {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--bg); border-radius: 20px 20px 0 0;
+      padding: 20px; box-shadow: var(--shadow-lg); z-index: 300;
+      transform: translateY(100%); transition: transform 0.25s ease;
+    }
+    .move-sheet.open { transform: translateY(0); }
+    .move-sheet-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 299; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+    }
+    .move-sheet-overlay.open { opacity: 1; pointer-events: auto; }
+    .move-sheet-title {
+      font-size: 15px; font-weight: 600; margin-bottom: 16px; text-align: center;
+    }
+    .move-sheet-pills {
+      display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+    }
+    .move-sheet-pill {
+      padding: 10px 20px; border-radius: 999px; font-size: 14px; font-weight: 500;
+      border: 1px solid var(--border); background: var(--bg); cursor: pointer;
+      font-family: var(--font); transition: all 0.15s ease;
+    }
+    .move-sheet-pill:hover { background: var(--blue-bg); border-color: var(--blue); }
+    .move-sheet-pill.current { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+    /* --- Shortcut Overlay --- */
+    .shortcut-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 500; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+    }
+    .shortcut-overlay.open { opacity: 1; pointer-events: auto; }
+    .shortcut-card {
+      background: var(--bg); border-radius: var(--radius); padding: 24px 32px;
+      box-shadow: var(--shadow-lg); max-width: 480px; width: 90%;
+    }
+    .shortcut-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .shortcut-table { width: 100%; }
+    .shortcut-table td {
+      padding: 5px 8px; font-size: 13px; vertical-align: top;
+    }
+    .shortcut-table td:first-child {
+      font-family: var(--font-mono); font-weight: 600;
+      white-space: nowrap; width: 80px; color: var(--text-secondary);
+    }
+
+    /* Lightbox image */
+    .lightbox img {
+      max-width: 90vw; max-height: 90vh; object-fit: contain;
+      border-radius: var(--radius-sm);
+    }
+
+    /* --- Hamburger (mobile only) --- */
+    .hamburger {
+      display: none; position: fixed; top: 12px; left: 12px; z-index: 110;
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
+      background: var(--bg); border: 1px solid var(--border); cursor: pointer;
+      align-items: center; justify-content: center; box-shadow: var(--shadow-sm);
+    }
+    .rail-mobile-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 99; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+    }
+
+    /* --- Responsive --- */
+    @media (max-width: 768px) {
+      .hamburger { display: flex; }
+      .rail {
+        position: fixed; left: -260px; top: 0; height: 100%; width: 260px !important;
+        z-index: 100; box-shadow: var(--shadow-lg); transition: left 0.25s ease;
+      }
+      .rail.mobile-open { left: 0; }
+      .rail.collapsed { width: 260px !important; }
+      .rail.collapsed .rail-inner { opacity: 1; pointer-events: auto; }
+      .rail.collapsed .rail-collapsed-stats { opacity: 0; pointer-events: none; }
+      .rail-mobile-overlay { display: block; }
+      .rail-mobile-overlay.open { opacity: 1; pointer-events: auto; }
+
+      .board-area {
+        flex-direction: column; padding: 56px 12px 12px;
+        overflow-x: hidden; overflow-y: auto;
+      }
+      .kanban-column { width: 100%; min-width: 0; max-height: 50vh; flex-shrink: 0; }
+
+      .detail-panel {
+        position: fixed !important; inset: 0 !important; width: 100% !important;
+        z-index: 200; border-left: none !important;
+      }
+      .detail-panel.open { width: 100% !important; }
+      .detail-inner { width: 100%; }
+    }
+
+    /* --- Offline banner override (already in shared, just ensure visibility) --- */
+    .offline-banner { font-size: 13px; }
+  </style>
+</head>
+<body>
+
+  <!-- Offline Banner -->
+  <div class="offline-banner" id="offline-banner">Offline -- changes will sync when reconnected</div>
+
+  <!-- Hamburger (mobile) -->
+  <button class="hamburger" id="hamburger" aria-label="Open menu">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+      <line x1="3" y1="5" x2="15" y2="5"/><line x1="3" y1="9" x2="15" y2="9"/><line x1="3" y1="13" x2="15" y2="13"/>
+    </svg>
+  </button>
+
+  <!-- Mobile Rail Overlay -->
+  <div class="rail-mobile-overlay" id="rail-mobile-overlay"></div>
+
+  <div class="fixer-shell">
+
+    <!-- ========== LEFT RAIL ========== -->
+    <aside class="rail" id="rail">
+      <!-- Collapsed stats (shown when rail is collapsed) -->
+      <div class="rail-collapsed-stats" id="collapsed-stats"></div>
+
+      <div class="rail-inner">
+        <div class="rail-header">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Bug Tracker
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-section" id="stats-section"></div>
+
+        <!-- Filters -->
+        <div class="filters-section">
+          <!-- Search -->
+          <div class="filter-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="search-input" placeholder="Search bugs..." autocomplete="off">
+          </div>
+
+          <!-- Module dropdown -->
+          <div class="module-dropdown" id="module-dropdown">
+            <button class="module-trigger" id="module-trigger">
+              <span id="module-trigger-text">All modules</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="module-popover" id="module-popover"></div>
+          </div>
+
+          <!-- Reporter pills -->
+          <div>
+            <div class="pill-group-label">Reporter</div>
+            <div class="pill-group" id="reporter-pills"></div>
+          </div>
+
+          <!-- Severity pills -->
+          <div>
+            <div class="pill-group-label">Severity</div>
+            <div class="pill-group" id="severity-pills"></div>
+          </div>
+
+          <!-- Active filter chips -->
+          <div class="active-filters" id="active-filters"></div>
+        </div>
+
+        <!-- Collapse button -->
+        <button class="rail-collapse-btn" id="rail-collapse-btn" title="Toggle sidebar [">
+          <span id="collapse-icon">[</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ========== BOARD AREA ========== -->
+    <main class="board-area" id="board-area">
+      <div class="board-empty" id="board-empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <p>No open bugs. Nice work.</p>
+      </div>
+    </main>
+
+    <!-- ========== DETAIL PANEL ========== -->
+    <aside class="detail-panel" id="detail-panel">
+      <div class="detail-inner" id="detail-inner"></div>
+    </aside>
+  </div>
+
+  <!-- Move Sheet (mobile) -->
+  <div class="move-sheet-overlay" id="move-sheet-overlay"></div>
+  <div class="move-sheet" id="move-sheet">
+    <div class="move-sheet-title" id="move-sheet-title">Move bug</div>
+    <div class="move-sheet-pills" id="move-sheet-pills"></div>
+  </div>
+
+  <!-- Shortcut Overlay -->
+  <div class="shortcut-overlay" id="shortcut-overlay">
+    <div class="shortcut-card">
+      <h3>Keyboard Shortcuts</h3>
+      <table class="shortcut-table">
+        <tr><td>N</td><td>Focus search</td></tr>
+        <tr><td>[</td><td>Toggle sidebar</td></tr>
+        <tr><td>Esc</td><td>Close panel / overlay</td></tr>
+        <tr><td>1-4</td><td>Filter by status</td></tr>
+        <tr><td>0</td><td>Clear all filters</td></tr>
+        <tr><td>Up/Down</td><td>Navigate cards</td></tr>
+        <tr><td>Enter</td><td>Open focused card</td></tr>
+        <tr><td>Right</td><td>Move focused card forward</td></tr>
+        <tr><td>?</td><td>Toggle this overlay</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <img id="lightbox-img" src="" alt="Screenshot">
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../shared/config.js"></script>
+  <script>
+    /* ============================================
+       Fixer View — Application Logic
+       ============================================ */
+
+    // ---- State ----
+    let bugs = [];
+    let filters = { status: null, search: '', module: null, reporter: null, severity: null };
+    let selectedBugId = null;
+    let focusedCardIndex = -1;
+    let focusedColumn = 0;
+    let draggedBugId = null;
+    let longPressTimer = null;
+    let longPressBugId = null;
+    const STATUSES = ['Open', 'In Progress', 'Fixed', 'Verified'];
+    const ALL_STATUSES = ['Open', 'In Progress', 'Fixed', 'Verified', 'Closed'];
+    const SEVERITY_ORDER = ['Low', 'Medium', 'High', 'Critical'];
+
+    // ---- DOM Refs ----
+    const boardArea = document.getElementById('board-area');
+    const boardEmpty = document.getElementById('board-empty');
+    const detailPanel = document.getElementById('detail-panel');
+    const detailInner = document.getElementById('detail-inner');
+    const rail = document.getElementById('rail');
+    const statsSection = document.getElementById('stats-section');
+    const collapsedStats = document.getElementById('collapsed-stats');
+    const searchInput = document.getElementById('search-input');
+    const moduleTrigger = document.getElementById('module-trigger');
+    const moduleTriggerText = document.getElementById('module-trigger-text');
+    const modulePopover = document.getElementById('module-popover');
+    const reporterPills = document.getElementById('reporter-pills');
+    const severityPills = document.getElementById('severity-pills');
+    const activeFiltersEl = document.getElementById('active-filters');
+    const shortcutOverlay = document.getElementById('shortcut-overlay');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const moveSheetOverlay = document.getElementById('move-sheet-overlay');
+    const moveSheet = document.getElementById('move-sheet');
+    const moveSheetTitle = document.getElementById('move-sheet-title');
+    const moveSheetPills = document.getElementById('move-sheet-pills');
+    const railMobileOverlay = document.getElementById('rail-mobile-overlay');
+
+    // ---- Init ----
+    async function init() {
+      buildModulePopover();
+      buildReporterPills();
+      buildSeverityPills();
+      await fetchBugs();
+      renderBoard();
+      renderStats();
+      setupRealtime();
+      setupOfflineDetection();
+    }
+
+    // ---- Fetch Bugs ----
+    async function fetchBugs() {
+      const { data, error } = await supabase
+        .from('bugs')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) {
+        showToast('Failed to load bugs', true);
+        console.error(error);
+        return;
+      }
+      bugs = data || [];
+    }
+
+    // ---- Filter Logic ----
+    function getFilteredBugs() {
+      return bugs.filter(bug => {
+        if (filters.status && bug.status !== filters.status) return false;
+        if (filters.module && bug.module !== filters.module) return false;
+        if (filters.reporter && bug.reporter !== filters.reporter) return false;
+        if (filters.severity && bug.severity !== filters.severity) return false;
+        if (filters.search) {
+          const q = filters.search.toLowerCase();
+          const match = (bug.title || '').toLowerCase().includes(q)
+            || (bug.bug_id || '').toLowerCase().includes(q)
+            || (bug.module || '').toLowerCase().includes(q);
+          if (!match) return false;
+        }
+        return true;
+      });
+    }
+
+    function hasActiveFilters() {
+      return filters.status || filters.search || filters.module || filters.reporter || filters.severity;
+    }
+
+    // ---- Render Board ----
+    function renderBoard() {
+      // Remove old columns
+      boardArea.querySelectorAll('.kanban-column').forEach(c => c.remove());
+
+      const filtered = getFilteredBugs();
+      const columnsToShow = filters.status ? [filters.status] : STATUSES;
+
+      // Show board empty state?
+      const totalOnBoard = filtered.filter(b => STATUSES.includes(b.status)).length;
+      boardEmpty.classList.toggle('show', totalOnBoard === 0 && !hasActiveFilters());
+
+      columnsToShow.forEach(status => {
+        const colBugs = filtered.filter(b => b.status === status);
+        const col = document.createElement('div');
+        col.className = 'kanban-column';
+        col.dataset.status = status;
+
+        col.innerHTML = `
+          <div class="column-header">
+            <div class="column-title">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${STATUS_COLORS[status].dot}"></span>
+              ${esc(status)}
+            </div>
+            <span class="column-count">${colBugs.length}</span>
+          </div>
+          <div class="column-body" data-status="${esc(status)}"></div>
+        `;
+
+        const body = col.querySelector('.column-body');
+
+        // Drag-and-drop (desktop)
+        body.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          body.classList.add('drag-over');
+        });
+        body.addEventListener('dragleave', () => {
+          body.classList.remove('drag-over');
+        });
+        body.addEventListener('drop', async (e) => {
+          e.preventDefault();
+          body.classList.remove('drag-over');
+          const bugId = e.dataTransfer.getData('text/plain');
+          if (bugId) await moveBug(bugId, status);
+        });
+
+        if (colBugs.length === 0) {
+          body.innerHTML = '<div class="column-empty">No bugs with this status</div>';
+        } else {
+          colBugs.forEach(bug => {
+            body.appendChild(createCard(bug));
+          });
+        }
+
+        boardArea.appendChild(col);
+      });
+    }
+
+    // ---- Create Card ----
+    function createCard(bug) {
+      const card = document.createElement('div');
+      card.className = 'kanban-card card';
+      card.draggable = true;
+      card.dataset.id = bug.id;
+
+      const sevColor = SEVERITY_COLORS[bug.severity] || SEVERITY_COLORS.Medium;
+      const thumbHtml = bug.screenshot_url
+        ? `<img class="card-thumb" src="${esc(bug.screenshot_url)}" alt="" loading="lazy">`
+        : '';
+
+      card.innerHTML = `
+        <div class="card-top">
+          <span class="card-id">${esc(bug.bug_id)}</span>
+          <span class="card-time">${timeAgo(bug.created_at)}</span>
+        </div>
+        <div class="card-title">${esc(bug.title)}</div>
+        <div class="card-bottom">
+          <span class="card-module">${esc(bug.module || '—')}</span>
+          <span class="severity-dot" style="background:${sevColor}" title="${esc(bug.severity)}"></span>
+          <span class="card-reporter">${esc(bug.reporter)}</span>
+        </div>
+        ${thumbHtml}
+      `;
+
+      // Click -> open detail
+      card.addEventListener('click', (e) => {
+        if (e.target.classList.contains('severity-dot')) return;
+        openDetail(bug.id);
+      });
+
+      // Severity dot click
+      const sevDot = card.querySelector('.severity-dot');
+      sevDot.addEventListener('click', (e) => {
+        e.stopPropagation();
+        cycleSeverity(bug.id);
+      });
+
+      // Desktop drag
+      card.addEventListener('dragstart', (e) => {
+        draggedBugId = bug.id;
+        e.dataTransfer.setData('text/plain', bug.id);
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => card.classList.add('dragging'), 0);
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        draggedBugId = null;
+      });
+
+      // Mobile long-press
+      card.addEventListener('touchstart', (e) => {
+        longPressTimer = setTimeout(() => {
+          longPressBugId = bug.id;
+          openMoveSheet(bug);
+        }, 300);
+      }, { passive: true });
+      card.addEventListener('touchmove', () => {
+        clearTimeout(longPressTimer);
+      }, { passive: true });
+      card.addEventListener('touchend', () => {
+        clearTimeout(longPressTimer);
+      });
+
+      return card;
+    }
+
+    // ---- Move Bug ----
+    async function moveBug(bugId, newStatus) {
+      const bug = bugs.find(b => b.id === bugId);
+      if (!bug || bug.status === newStatus) return;
+
+      const oldStatus = bug.status;
+      bug.status = newStatus;
+
+      // Set resolved_at when moved to Fixed/Verified/Closed
+      const updates = { status: newStatus };
+      if (['Fixed', 'Verified', 'Closed'].includes(newStatus) && !bug.resolved_at) {
+        updates.resolved_at = new Date().toISOString();
+        bug.resolved_at = updates.resolved_at;
+      }
+      if (['Open', 'In Progress'].includes(newStatus)) {
+        updates.resolved_at = null;
+        bug.resolved_at = null;
+      }
+
+      renderBoard();
+      renderStats();
+      if (selectedBugId === bugId) renderDetail(bug);
+
+      const { error } = await supabase.from('bugs').update(updates).eq('id', bugId);
+      if (error) {
+        showToast('Failed to move bug', true);
+        bug.status = oldStatus;
+        renderBoard();
+        renderStats();
+      } else {
+        showToast(`Moved to ${newStatus}`);
+      }
+    }
+
+    // ---- Cycle Severity ----
+    async function cycleSeverity(bugId) {
+      const bug = bugs.find(b => b.id === bugId);
+      if (!bug) return;
+      const idx = SEVERITY_ORDER.indexOf(bug.severity);
+      const next = SEVERITY_ORDER[(idx + 1) % SEVERITY_ORDER.length];
+      bug.severity = next;
+      renderBoard();
+      if (selectedBugId === bugId) renderDetail(bug);
+
+      const { error } = await supabase.from('bugs').update({ severity: next }).eq('id', bugId);
+      if (error) {
+        showToast('Failed to update severity', true);
+      } else {
+        showToast(`Severity: ${next}`);
+      }
+    }
+
+    // ---- Stats ----
+    function renderStats() {
+      const statusList = ['Open', 'In Progress', 'Fixed', 'Verified'];
+      const counts = {};
+      statusList.forEach(s => { counts[s] = bugs.filter(b => b.status === s).length; });
+
+      statsSection.innerHTML = statusList.map(s => `
+        <div class="stat-row${filters.status === s ? ' active' : ''}" data-status="${esc(s)}">
+          <span class="stat-dot" style="background:${STATUS_COLORS[s].dot}"></span>
+          <span class="stat-count">${counts[s]}</span>
+          <span class="stat-label">${esc(s)}</span>
+        </div>
+      `).join('');
+
+      statsSection.querySelectorAll('.stat-row').forEach(row => {
+        row.addEventListener('click', () => {
+          const s = row.dataset.status;
+          filters.status = filters.status === s ? null : s;
+          renderBoard();
+          renderStats();
+          renderActiveFilters();
+        });
+      });
+
+      // Collapsed stats
+      collapsedStats.innerHTML = statusList.map(s => `
+        <div class="rail-collapsed-stat" data-status="${esc(s)}" title="${esc(s)}">
+          <span class="c-dot" style="background:${STATUS_COLORS[s].dot}"></span>
+          <span class="c-num">${counts[s]}</span>
+        </div>
+      `).join('');
+
+      collapsedStats.querySelectorAll('.rail-collapsed-stat').forEach(el => {
+        el.addEventListener('click', () => {
+          const s = el.dataset.status;
+          filters.status = filters.status === s ? null : s;
+          renderBoard();
+          renderStats();
+          renderActiveFilters();
+        });
+      });
+    }
+
+    // ---- Module Popover ----
+    function buildModulePopover() {
+      let html = `<div class="module-option${!filters.module ? ' active' : ''}" data-module="">All modules</div>`;
+      for (const [group, modules] of Object.entries(MODULES)) {
+        html += `<div class="module-group-label">${esc(group)}</div>`;
+        modules.forEach(m => {
+          const fullModule = `${group} / ${m}`;
+          html += `<div class="module-option${filters.module === fullModule ? ' active' : ''}" data-module="${esc(fullModule)}">${esc(m)}</div>`;
+        });
+      }
+      modulePopover.innerHTML = html;
+
+      modulePopover.querySelectorAll('.module-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+          filters.module = opt.dataset.module || null;
+          moduleTriggerText.textContent = filters.module || 'All modules';
+          modulePopover.classList.remove('open');
+          renderBoard();
+          renderStats();
+          renderActiveFilters();
+          buildModulePopover();
+        });
+      });
+
+      moduleTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        modulePopover.classList.toggle('open');
+      });
+    }
+
+    // ---- Reporter Pills ----
+    function buildReporterPills() {
+      const all = [null, ...REPORTERS];
+      reporterPills.innerHTML = all.map(r => {
+        const label = r || 'All';
+        const active = filters.reporter === r ? ' active' : '';
+        return `<button class="pill${active}" data-reporter="${r || ''}">${esc(label)}</button>`;
+      }).join('');
+
+      reporterPills.querySelectorAll('.pill').forEach(p => {
+        p.addEventListener('click', () => {
+          filters.reporter = p.dataset.reporter || null;
+          buildReporterPills();
+          renderBoard();
+          renderActiveFilters();
+        });
+      });
+    }
+
+    // ---- Severity Pills ----
+    function buildSeverityPills() {
+      const all = [null, 'Critical', 'High', 'Medium', 'Low'];
+      severityPills.innerHTML = all.map(s => {
+        const label = s || 'All';
+        const active = filters.severity === s ? ' active' : '';
+        return `<button class="pill${active}" data-severity="${s || ''}">${esc(label)}</button>`;
+      }).join('');
+
+      severityPills.querySelectorAll('.pill').forEach(p => {
+        p.addEventListener('click', () => {
+          filters.severity = p.dataset.severity || null;
+          buildSeverityPills();
+          renderBoard();
+          renderActiveFilters();
+        });
+      });
+    }
+
+    // ---- Active Filters Chips ----
+    function renderActiveFilters() {
+      const chips = [];
+      if (filters.status) chips.push({ key: 'status', label: filters.status });
+      if (filters.module) chips.push({ key: 'module', label: filters.module });
+      if (filters.reporter) chips.push({ key: 'reporter', label: filters.reporter });
+      if (filters.severity) chips.push({ key: 'severity', label: filters.severity });
+      if (filters.search) chips.push({ key: 'search', label: `"${filters.search}"` });
+
+      if (chips.length === 0) {
+        activeFiltersEl.innerHTML = '';
+        return;
+      }
+
+      activeFiltersEl.innerHTML = chips.map(c =>
+        `<span class="filter-chip">${esc(c.label)}<span class="filter-chip-x" data-key="${c.key}">&times;</span></span>`
+      ).join('') + `<button class="clear-all">Clear all</button>`;
+
+      activeFiltersEl.querySelectorAll('.filter-chip-x').forEach(x => {
+        x.addEventListener('click', () => {
+          const key = x.dataset.key;
+          filters[key] = key === 'search' ? '' : null;
+          if (key === 'search') searchInput.value = '';
+          if (key === 'reporter') buildReporterPills();
+          if (key === 'severity') buildSeverityPills();
+          if (key === 'module') {
+            moduleTriggerText.textContent = 'All modules';
+            buildModulePopover();
+          }
+          renderBoard();
+          renderStats();
+          renderActiveFilters();
+        });
+      });
+
+      activeFiltersEl.querySelector('.clear-all').addEventListener('click', clearAllFilters);
+    }
+
+    function clearAllFilters() {
+      filters = { status: null, search: '', module: null, reporter: null, severity: null };
+      searchInput.value = '';
+      moduleTriggerText.textContent = 'All modules';
+      buildModulePopover();
+      buildReporterPills();
+      buildSeverityPills();
+      renderBoard();
+      renderStats();
+      renderActiveFilters();
+    }
+
+    // ---- Search ----
+    searchInput.addEventListener('input', () => {
+      filters.search = searchInput.value.trim();
+      renderBoard();
+      renderActiveFilters();
+    });
+
+    // ---- Rail Collapse ----
+    function toggleRail() {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        rail.classList.toggle('mobile-open');
+        railMobileOverlay.classList.toggle('open', rail.classList.contains('mobile-open'));
+        return;
+      }
+      rail.classList.toggle('collapsed');
+      document.getElementById('collapse-icon').textContent = rail.classList.contains('collapsed') ? ']' : '[';
+    }
+
+    document.getElementById('rail-collapse-btn').addEventListener('click', toggleRail);
+    document.getElementById('hamburger').addEventListener('click', () => {
+      rail.classList.toggle('mobile-open');
+      railMobileOverlay.classList.toggle('open', rail.classList.contains('mobile-open'));
+    });
+    railMobileOverlay.addEventListener('click', () => {
+      rail.classList.remove('mobile-open');
+      railMobileOverlay.classList.remove('open');
+    });
+
+    // ---- Close popover on outside click ----
+    document.addEventListener('click', (e) => {
+      if (!document.getElementById('module-dropdown').contains(e.target)) {
+        modulePopover.classList.remove('open');
+      }
+    });
+
+    // ---- Detail Panel ----
+    function openDetail(bugId) {
+      selectedBugId = bugId;
+      const bug = bugs.find(b => b.id === bugId);
+      if (!bug) return;
+      renderDetail(bug);
+      detailPanel.classList.add('open');
+    }
+
+    function closeDetailPanel() {
+      detailPanel.classList.remove('open');
+      selectedBugId = null;
+    }
+
+    function renderDetail(bug) {
+      const sevColor = SEVERITY_COLORS[bug.severity] || SEVERITY_COLORS.Medium;
+      const createdDate = new Date(bug.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+      const screenshotHtml = bug.screenshot_url ? `
+        <div class="detail-screenshot">
+          <img src="${esc(bug.screenshot_url)}" alt="Screenshot" id="detail-screenshot-img">
+        </div>
+      ` : '';
+
+      const stepperHtml = ALL_STATUSES.map((s, i) => {
+        const currentIdx = ALL_STATUSES.indexOf(bug.status);
+        const filled = i <= currentIdx;
+        return `<button class="step-btn ${filled ? 'filled' : 'unfilled'}" data-step-status="${esc(s)}">${esc(s)}</button>`;
+      }).join('');
+
+      detailInner.innerHTML = `
+        <div class="detail-header">
+          <span class="detail-bug-id">${esc(bug.bug_id)}</span>
+          <button class="detail-close" id="detail-close-btn" title="Close (Esc)">&times;</button>
+        </div>
+
+        <div class="detail-title" id="detail-title" title="Click to edit">${esc(bug.title)}</div>
+
+        <div class="detail-meta">
+          <span class="meta-item">${esc(bug.reporter)}</span>
+          <span class="meta-pill">${esc(bug.module || '—')}</span>
+          <span class="meta-item">${createdDate}</span>
+          <span class="severity-dot" id="detail-severity-dot" style="background:${sevColor}" title="${esc(bug.severity)}"></span>
+        </div>
+
+        ${screenshotHtml}
+
+        <div class="status-stepper" id="status-stepper" style="position:relative">
+          ${stepperHtml}
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-label">Fix Notes <span class="saved-indicator" id="fix-saved">Saved</span></div>
+          <textarea class="detail-textarea" id="fix-notes-textarea" placeholder="What did you change? File, function, what...">${esc(bug.fix_notes || '')}</textarea>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-label">Verified By <span class="saved-indicator" id="verified-saved">Saved</span></div>
+          <select class="detail-select" id="verified-by-select">
+            <option value="">--</option>
+            ${REPORTERS.map(r => `<option value="${esc(r)}" ${bug.verified_by === r ? 'selected' : ''}>${esc(r)}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-label">Notes / Links <span class="saved-indicator" id="notes-saved">Saved</span></div>
+          <input class="detail-input" id="notes-input" placeholder="Related URLs, commit SHAs, Notion links..." value="${esc(bug.notes || '')}">
+        </div>
+
+        <div class="delete-section">
+          <button class="btn-delete-ghost" id="delete-btn">Delete Bug</button>
+          <div class="delete-confirm" id="delete-confirm">
+            <span style="font-size:13px;color:var(--text-secondary)">Are you sure?</span>
+            <button class="btn btn-danger btn-sm" id="delete-yes">Yes, delete</button>
+            <button class="btn btn-ghost btn-sm" id="delete-cancel">Cancel</button>
+          </div>
+        </div>
+      `;
+
+      // --- Wire up detail interactions ---
+
+      // Close button
+      document.getElementById('detail-close-btn').addEventListener('click', closeDetailPanel);
+
+      // Editable title
+      const titleEl = document.getElementById('detail-title');
+      titleEl.addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'detail-title-input';
+        input.value = bug.title;
+        titleEl.replaceWith(input);
+        input.focus();
+        input.addEventListener('blur', async () => {
+          const newTitle = input.value.trim();
+          if (newTitle && newTitle !== bug.title) {
+            bug.title = newTitle;
+            const { error } = await supabase.from('bugs').update({ title: newTitle }).eq('id', bug.id);
+            if (error) showToast('Failed to save title', true);
+            else renderBoard();
+          }
+          renderDetail(bug);
+        });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') input.blur();
+          if (e.key === 'Escape') { input.value = bug.title; input.blur(); }
+        });
+      });
+
+      // Severity dot in detail
+      const detailSevDot = document.getElementById('detail-severity-dot');
+      if (detailSevDot) {
+        detailSevDot.addEventListener('click', () => cycleSeverity(bug.id));
+      }
+
+      // Screenshot lightbox
+      const ssImg = document.getElementById('detail-screenshot-img');
+      if (ssImg) {
+        ssImg.addEventListener('click', () => {
+          lightboxImg.src = bug.screenshot_url;
+          lightbox.classList.add('show');
+        });
+      }
+
+      // Status stepper
+      const stepper = document.getElementById('status-stepper');
+      stepper.querySelectorAll('.step-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const targetStatus = btn.dataset.stepStatus;
+          if (targetStatus === bug.status) return;
+          const currentIdx = ALL_STATUSES.indexOf(bug.status);
+          const targetIdx = ALL_STATUSES.indexOf(targetStatus);
+
+          if (targetIdx < currentIdx) {
+            // Moving backward -> confirm
+            showReopenPopover(btn, bug, targetStatus);
+          } else {
+            await moveBug(bug.id, targetStatus);
+          }
+        });
+      });
+
+      // Fix Notes auto-save
+      const fixTextarea = document.getElementById('fix-notes-textarea');
+      const fixSaved = document.getElementById('fix-saved');
+      let fixTimer;
+      fixTextarea.addEventListener('input', () => {
+        clearTimeout(fixTimer);
+        fixSaved.style.opacity = '0';
+        fixTimer = setTimeout(async () => {
+          bug.fix_notes = fixTextarea.value;
+          const { error } = await supabase.from('bugs').update({ fix_notes: fixTextarea.value }).eq('id', bug.id);
+          if (!error) {
+            fixSaved.style.opacity = '1';
+            setTimeout(() => fixSaved.style.opacity = '0', 1500);
+          } else {
+            showToast('Failed to save notes', true);
+          }
+        }, 1000);
+      });
+
+      // Verified By auto-save
+      const verifiedSelect = document.getElementById('verified-by-select');
+      const verifiedSaved = document.getElementById('verified-saved');
+      verifiedSelect.addEventListener('change', async () => {
+        bug.verified_by = verifiedSelect.value || null;
+        const { error } = await supabase.from('bugs').update({ verified_by: bug.verified_by }).eq('id', bug.id);
+        if (!error) {
+          verifiedSaved.style.opacity = '1';
+          setTimeout(() => verifiedSaved.style.opacity = '0', 1500);
+        } else {
+          showToast('Failed to save', true);
+        }
+      });
+
+      // Notes/Links auto-save on blur
+      const notesInput = document.getElementById('notes-input');
+      const notesSaved = document.getElementById('notes-saved');
+      notesInput.addEventListener('blur', async () => {
+        if (notesInput.value !== (bug.notes || '')) {
+          bug.notes = notesInput.value;
+          const { error } = await supabase.from('bugs').update({ notes: bug.notes }).eq('id', bug.id);
+          if (!error) {
+            notesSaved.style.opacity = '1';
+            setTimeout(() => notesSaved.style.opacity = '0', 1500);
+          } else {
+            showToast('Failed to save', true);
+          }
+        }
+      });
+
+      // Delete
+      const deleteBtn = document.getElementById('delete-btn');
+      const deleteConfirm = document.getElementById('delete-confirm');
+      deleteBtn.addEventListener('click', () => {
+        deleteConfirm.classList.add('show');
+        deleteBtn.style.display = 'none';
+      });
+      document.getElementById('delete-cancel').addEventListener('click', () => {
+        deleteConfirm.classList.remove('show');
+        deleteBtn.style.display = '';
+      });
+      document.getElementById('delete-yes').addEventListener('click', async () => {
+        const { error } = await supabase.from('bugs').delete().eq('id', bug.id);
+        if (error) {
+          showToast('Failed to delete', true);
+          return;
+        }
+        bugs = bugs.filter(b => b.id !== bug.id);
+        closeDetailPanel();
+        renderBoard();
+        renderStats();
+        showToast('Bug deleted');
+      });
+    }
+
+    // ---- Reopen Popover ----
+    function showReopenPopover(anchorBtn, bug, targetStatus) {
+      // Remove any existing popover
+      document.querySelectorAll('.reopen-popover').forEach(p => p.remove());
+
+      const popover = document.createElement('div');
+      popover.className = 'reopen-popover';
+      popover.innerHTML = `
+        <div class="reopen-text">Reopen to ${esc(targetStatus)}?</div>
+        <div class="reopen-actions">
+          <button class="btn btn-primary btn-sm" id="reopen-confirm">Confirm</button>
+          <button class="btn btn-ghost btn-sm" id="reopen-cancel">Cancel</button>
+        </div>
+      `;
+      anchorBtn.style.position = 'relative';
+      anchorBtn.appendChild(popover);
+
+      popover.querySelector('#reopen-confirm').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        popover.remove();
+        await moveBug(bug.id, targetStatus);
+      });
+      popover.querySelector('#reopen-cancel').addEventListener('click', (e) => {
+        e.stopPropagation();
+        popover.remove();
+      });
+
+      // Close on outside click
+      setTimeout(() => {
+        const handler = (e) => {
+          if (!popover.contains(e.target)) {
+            popover.remove();
+            document.removeEventListener('click', handler);
+          }
+        };
+        document.addEventListener('click', handler);
+      }, 10);
+    }
+
+    // ---- Lightbox ----
+    lightbox.addEventListener('click', () => {
+      lightbox.classList.remove('show');
+    });
+
+    // ---- Mobile Move Sheet ----
+    function openMoveSheet(bug) {
+      moveSheetTitle.textContent = `Move: ${bug.bug_id}`;
+      moveSheetPills.innerHTML = ALL_STATUSES.map(s => {
+        const current = s === bug.status ? ' current' : '';
+        return `<button class="move-sheet-pill${current}" data-status="${esc(s)}">${esc(s)}</button>`;
+      }).join('');
+
+      moveSheetPills.querySelectorAll('.move-sheet-pill').forEach(p => {
+        p.addEventListener('click', async () => {
+          closeMoveSheet();
+          if (p.dataset.status !== bug.status) {
+            await moveBug(bug.id, p.dataset.status);
+          }
+        });
+      });
+
+      moveSheetOverlay.classList.add('open');
+      moveSheet.classList.add('open');
+    }
+
+    function closeMoveSheet() {
+      moveSheetOverlay.classList.remove('open');
+      moveSheet.classList.remove('open');
+      longPressBugId = null;
+    }
+
+    moveSheetOverlay.addEventListener('click', closeMoveSheet);
+
+    // ---- Keyboard Shortcuts ----
+    document.addEventListener('keydown', (e) => {
+      if (e.target.matches('input, textarea, select, [contenteditable]')) return;
+
+      switch (e.key) {
+        case 'n': case 'N':
+          focusSearch();
+          e.preventDefault();
+          break;
+        case '[':
+          toggleRail();
+          break;
+        case 'Escape':
+          if (shortcutOverlay.classList.contains('open')) {
+            shortcutOverlay.classList.remove('open');
+          } else if (lightbox.classList.contains('show')) {
+            lightbox.classList.remove('show');
+          } else if (moveSheet.classList.contains('open')) {
+            closeMoveSheet();
+          } else {
+            closeDetailPanel();
+          }
+          break;
+        case '1': filterToStatus('Open'); break;
+        case '2': filterToStatus('In Progress'); break;
+        case '3': filterToStatus('Fixed'); break;
+        case '4': filterToStatus('Verified'); break;
+        case '0': clearAllFilters(); break;
+        case 'ArrowUp':
+          navigateCards(-1);
+          e.preventDefault();
+          break;
+        case 'ArrowDown':
+          navigateCards(1);
+          e.preventDefault();
+          break;
+        case 'Enter':
+          openFocusedCard();
+          break;
+        case 'ArrowRight':
+          moveFocusedCardForward();
+          e.preventDefault();
+          break;
+        case '?':
+          toggleShortcutOverlay();
+          break;
+      }
+    });
+
+    function focusSearch() {
+      searchInput.focus();
+      // On mobile, open rail first
+      if (window.innerWidth <= 768 && !rail.classList.contains('mobile-open')) {
+        rail.classList.add('mobile-open');
+        railMobileOverlay.classList.add('open');
+      }
+    }
+
+    function filterToStatus(status) {
+      filters.status = filters.status === status ? null : status;
+      renderBoard();
+      renderStats();
+      renderActiveFilters();
+    }
+
+    function toggleShortcutOverlay() {
+      shortcutOverlay.classList.toggle('open');
+    }
+
+    shortcutOverlay.addEventListener('click', (e) => {
+      if (e.target === shortcutOverlay) shortcutOverlay.classList.remove('open');
+    });
+
+    // ---- Card Navigation ----
+    function getVisibleCards() {
+      const columns = Array.from(boardArea.querySelectorAll('.kanban-column'));
+      return columns.map(col => ({
+        status: col.dataset.status,
+        cards: Array.from(col.querySelectorAll('.kanban-card'))
+      })).filter(c => c.cards.length > 0);
+    }
+
+    function clearCardFocus() {
+      boardArea.querySelectorAll('.kanban-card.focused').forEach(c => c.classList.remove('focused'));
+    }
+
+    function navigateCards(direction) {
+      const columns = getVisibleCards();
+      if (columns.length === 0) return;
+
+      // Clamp column
+      if (focusedColumn < 0) focusedColumn = 0;
+      if (focusedColumn >= columns.length) focusedColumn = columns.length - 1;
+
+      const col = columns[focusedColumn];
+      focusedCardIndex += direction;
+
+      if (focusedCardIndex < 0) focusedCardIndex = 0;
+      if (focusedCardIndex >= col.cards.length) focusedCardIndex = col.cards.length - 1;
+
+      clearCardFocus();
+      col.cards[focusedCardIndex].classList.add('focused');
+      col.cards[focusedCardIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
+    function openFocusedCard() {
+      const focused = boardArea.querySelector('.kanban-card.focused');
+      if (focused) openDetail(focused.dataset.id);
+    }
+
+    function moveFocusedCardForward() {
+      const focused = boardArea.querySelector('.kanban-card.focused');
+      if (!focused) return;
+      const bugId = focused.dataset.id;
+      const bug = bugs.find(b => b.id === bugId);
+      if (!bug) return;
+      const idx = STATUSES.indexOf(bug.status);
+      if (idx < STATUSES.length - 1) {
+        moveBug(bugId, STATUSES[idx + 1]);
+      }
+    }
+
+    // ---- Real-Time ----
+    function setupRealtime() {
+      supabase.channel('fixer-bugs')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bugs' }, (payload) => {
+          const newBug = payload.new;
+          // Avoid duplicates
+          if (!bugs.find(b => b.id === newBug.id)) {
+            bugs.unshift(newBug);
+            renderBoard();
+            renderStats();
+            // Animate the new card
+            setTimeout(() => {
+              const card = boardArea.querySelector(`[data-id="${newBug.id}"]`);
+              if (card) card.classList.add('card-enter');
+            }, 50);
+          }
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bugs' }, (payload) => {
+          const updated = payload.new;
+          const idx = bugs.findIndex(b => b.id === updated.id);
+          if (idx === -1) return;
+
+          // Don't overwrite fix_notes if user is currently typing
+          const activeEl = document.activeElement;
+          const isTypingFixNotes = activeEl && activeEl.id === 'fix-notes-textarea';
+          if (isTypingFixNotes) {
+            const savedNotes = updated.fix_notes;
+            updated.fix_notes = bugs[idx].fix_notes;
+            bugs[idx] = updated;
+            bugs[idx].fix_notes = savedNotes; // Keep local
+          } else {
+            bugs[idx] = updated;
+          }
+
+          renderBoard();
+          renderStats();
+          if (selectedBugId === updated.id && !isTypingFixNotes) {
+            renderDetail(updated);
+          }
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'bugs' }, (payload) => {
+          const deletedId = payload.old.id;
+          bugs = bugs.filter(b => b.id !== deletedId);
+          if (selectedBugId === deletedId) closeDetailPanel();
+          renderBoard();
+          renderStats();
+        })
+        .subscribe();
+    }
+
+    // ---- Offline Detection ----
+    function setupOfflineDetection() {
+      const banner = document.getElementById('offline-banner');
+      window.addEventListener('offline', () => banner.classList.add('show'));
+      window.addEventListener('online', () => {
+        banner.classList.remove('show');
+        showToast('Back online');
+      });
+    }
+
+    // ---- Boot ----
+    init();
+  </script>
+</body>
+</html>
