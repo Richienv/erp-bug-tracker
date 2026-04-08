@@ -281,7 +281,7 @@
     background: var(--bg-primary);
     border: 0.5px solid var(--border-light);
     border-radius: var(--radius-lg);
-    padding: 14px;
+    padding: 18px 16px 14px;
     cursor: pointer;
     transition: border-color 0.12s, transform 0.12s, box-shadow 0.12s;
     user-select: none;
@@ -344,15 +344,15 @@
 
   /* Copy button */
   .copy-btn {
-    font-size: 11px; padding: 2px 8px;
-    border-radius: 4px;
+    width: 26px; height: 26px; padding: 0;
+    border-radius: 5px;
     border: 0.5px solid var(--border-light);
     background: var(--bg-secondary);
     color: var(--text-secondary);
     cursor: pointer;
-    display: inline-flex; align-items: center; gap: 4px;
+    display: inline-flex; align-items: center; justify-content: center;
     transition: background 0.12s, color 0.12s, border-color 0.12s;
-    white-space: nowrap;
+    flex-shrink: 0;
     font-family: var(--font);
   }
   .copy-btn:hover { border-color: var(--border-mid); color: var(--text-primary); }
@@ -1193,18 +1193,19 @@ Please analyze this bug and help me fix it. The issue is in the ${moduleStr} mod
     const copyIcon = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>`;
     const imgIcon = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="10" rx="1.5"/><circle cx="5.5" cy="7" r="1.2"/><path d="M1 11l4-4 3 3 2-2 4 4"/></svg>`;
 
-    function makeBtn(icon, label) {
+    function makeBtn(icon, title) {
       const btn = document.createElement('button');
       btn.className = 'copy-btn';
-      btn.innerHTML = `${icon} ${label}`;
+      btn.title = title;
+      btn.innerHTML = icon;
       return btn;
     }
 
-    function flashCopied(btn, icon, label) {
-      btn.innerHTML = '✓ Copied';
+    function flashCopied(btn, icon) {
+      btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 8 6 12 14 4"/></svg>`;
       btn.classList.add('copied');
       setTimeout(() => {
-        btn.innerHTML = `${icon} ${label}`;
+        btn.innerHTML = icon;
         btn.classList.remove('copied');
       }, 2000);
     }
@@ -1213,12 +1214,12 @@ Please analyze this bug and help me fix it. The issue is in the ${moduleStr} mod
     wrap.className = 'copy-btn-wrap';
 
     // Text copy button
-    const textBtn = makeBtn(copyIcon, 'Copy text');
+    const textBtn = makeBtn(copyIcon, 'Copy bug report as prompt');
     textBtn.addEventListener('click', async e => {
       e.stopPropagation();
       try {
         await navigator.clipboard.writeText(text);
-        flashCopied(textBtn, copyIcon, 'Copy text');
+        flashCopied(textBtn, copyIcon);
       } catch {
         showToast('Copy failed', true);
       }
@@ -1227,7 +1228,7 @@ Please analyze this bug and help me fix it. The issue is in the ${moduleStr} mod
 
     // Image copy button — only if screenshot exists
     if (bug.screenshot_url) {
-      const imgBtn = makeBtn(imgIcon, 'Copy img');
+      const imgBtn = makeBtn(imgIcon, 'Copy screenshot to clipboard');
       imgBtn.addEventListener('click', async e => {
         e.stopPropagation();
         try {
@@ -1235,7 +1236,7 @@ Please analyze this bug and help me fix it. The issue is in the ${moduleStr} mod
           const blob = await res.blob();
           const mimeType = blob.type.startsWith('image/') ? blob.type : 'image/png';
           await navigator.clipboard.write([new ClipboardItem({ [mimeType]: blob })]);
-          flashCopied(imgBtn, imgIcon, 'Copy img');
+          flashCopied(imgBtn, imgIcon);
         } catch {
           showToast('Copy failed', true);
         }
