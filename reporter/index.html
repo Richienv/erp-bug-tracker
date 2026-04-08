@@ -475,6 +475,11 @@
         <textarea class="field-input" id="title-input" placeholder="Describe the issue — what happened, what you expected..."></textarea>
       </div>
 
+      <div class="field">
+        <label class="field-label">Steps to reproduce <span style="color:var(--text-tertiary);font-weight:400">(optional)</span></label>
+        <textarea class="field-input" id="steps-input" rows="3" placeholder="1. Go to...&#10;2. Click...&#10;3. Expected X, got Y..."></textarea>
+      </div>
+
       <div class="two-col">
         <div class="field">
           <label class="field-label">Module</label>
@@ -632,6 +637,7 @@
   const loginBtn        = $('login-btn');
   const mainView        = $('main-view');
   const titleInput      = $('title-input');
+  const stepsInput      = $('steps-input');
   const moduleSelect    = $('module-select');
   const submoduleField  = $('submodule-field');
   const submoduleSelect = $('submodule-select');
@@ -844,9 +850,15 @@
       }
 
       const category = categorySelect.value;
+      const steps    = stepsInput.value.trim();
       const moduleVal = getModuleValue();
 
-      /* Build insert payload — store category in notes if no category column */
+      /* Build notes field: Category + Steps lines */
+      const notesParts = [];
+      if (category) notesParts.push(`Category: ${category}`);
+      if (steps)    notesParts.push(`Steps: ${steps}`);
+
+      /* Build insert payload */
       const payload = {
         title,
         module:        moduleVal,
@@ -854,23 +866,17 @@
         screenshot_url,
         status:        'Open',
         severity:      'Medium',
+        notes:         notesParts.length ? notesParts.join('\n') : null,
       };
 
-      /* Try to use a category column; fall back to prefixing notes */
-      try {
-        payload.category = category || null;
-      } catch(_) { /* ignore */ }
-
-      if (!payload.category && category) {
-        payload.notes = `Category: ${category}`;
-      }
+      /* Try to also use a dedicated category column if it exists */
+      try { payload.category = category || null; } catch(_) { /* ignore */ }
 
       const { data, error } = await sb.from('bugs').insert(payload).select().single();
       if (error) {
         /* If category column doesn't exist, retry without it */
         if (error.message && error.message.includes('category')) {
           delete payload.category;
-          if (category) payload.notes = `Category: ${category}`;
           const retry = await sb.from('bugs').insert(payload).select().single();
           if (retry.error) throw retry.error;
           handleInsertSuccess(retry.data);
@@ -902,6 +908,7 @@
     }
     // Reset form
     titleInput.value = '';
+    stepsInput.value = '';
     moduleSelect.value = '';
     categorySelect.value = '';
     submoduleField.classList.remove('visible');

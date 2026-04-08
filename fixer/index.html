@@ -910,14 +910,16 @@
     bugs = data || [];
   }
 
-  // ---- Category extraction ----
-  function extractCategory(bug) {
-    const notes = bug.notes || '';
-    if (notes.startsWith('Category: ')) {
-      return notes.slice('Category: '.length).split('\n')[0].trim();
+  // ---- Notes field extraction ----
+  function extractNote(bug, key) {
+    const lines = (bug.notes || '').split('\n');
+    for (const line of lines) {
+      if (line.startsWith(key + ': ')) return line.slice(key.length + 2).trim();
     }
     return null;
   }
+  function extractCategory(bug) { return extractNote(bug, 'Category'); }
+  function extractSteps(bug)    { return extractNote(bug, 'Steps'); }
 
   function getCategoryClass(cat) {
     if (!cat) return '';
@@ -1177,20 +1179,24 @@
     const sub = parts[1];
     const moduleStr = sub ? `${mod} → ${sub}` : mod || '—';
     const reportedDate = new Date(bug.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const category = extractCategory(bug);
+    const rawCat  = extractCategory(bug) || '';
+    const steps   = extractSteps(bug);
 
-    const text = `# ${bug.bug_id} — ${bug.title}
+    const CAT_LABELS = {
+      'Button/action':  'button/action not working',
+      'Missing data':   'missing or wrong data',
+      'Missing feature':'missing feature',
+      'Form':           'form not submitting',
+      'Validation':     'validation error',
+      'UI':             'UI display issue',
+      'Performance':    'performance issue',
+      'Crash':          'page crash',
+      'Other':          'bug',
+    };
+    const categoryLabel = CAT_LABELS[rawCat] || (rawCat ? rawCat.toLowerCase() : 'bug');
+    const stepsLine = steps ? ` To reproduce: ${steps.trim()}.` : '';
 
-${bug.title}
-
-Module: ${moduleStr}${category ? `\nCategory: ${category}` : ''}
-Reporter: ${bug.reporter} · ${reportedDate}${bug.screenshot_url ? `\nScreenshot: ${bug.screenshot_url}` : ''}
-
----
-
-Audit the codebase, diagnose the root cause, and fix it. Grep before touching any file. Follow existing patterns. Run tsc --noEmit after.
-
-Stack: Next.js App Router · React 19 · TypeScript · Prisma 6 · Supabase · TanStack Query v5 · shadcn/ui`;
+    const text = `${moduleStr} has a ${categoryLabel} reported by ${bug.reporter} on ${reportedDate}: "${bug.title}".${stepsLine} Fix this — Plan Mode first, read the relevant component and server action before touching anything. Validate client AND server if it's a form issue. No unrelated changes.`;
 
     const copyIcon = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>`;
     const imgIcon = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="10" rx="1.5"/><circle cx="5.5" cy="7" r="1.2"/><path d="M1 11l4-4 3 3 2-2 4 4"/></svg>`;
