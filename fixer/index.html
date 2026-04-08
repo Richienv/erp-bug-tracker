@@ -361,7 +361,7 @@
     border-color: rgba(29,158,117,0.2);
     color: var(--green-text);
   }
-  .copy-btn-wrap { margin-left: auto; display: flex; align-items: center; }
+  .copy-btn-wrap { margin-left: auto; display: flex; align-items: center; gap: 4px; }
 
   /* screenshot thumb */
   .card-thumb {
@@ -1033,7 +1033,7 @@
     });
   }
 
-  // ---- Create Copy Button ----
+  // ---- Create Copy Buttons ----
   function createCopyButton(bug) {
     const parts = (bug.module || '').split(' / ');
     const mod = parts[0];
@@ -1056,39 +1056,59 @@ ${bug.title}
 **Screenshot (before):** ${bug.screenshot_url || 'None'}
 **Fix Notes:** ${bug.fix_notes || 'Not added yet'}`;
 
+    const copyIcon = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>`;
+    const imgIcon = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="10" rx="1.5"/><circle cx="5.5" cy="7" r="1.2"/><path d="M1 11l4-4 3 3 2-2 4 4"/></svg>`;
+
+    function makeBtn(icon, label) {
+      const btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.innerHTML = `${icon} ${label}`;
+      return btn;
+    }
+
+    function flashCopied(btn, icon, label) {
+      btn.innerHTML = '✓ Copied';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.innerHTML = `${icon} ${label}`;
+        btn.classList.remove('copied');
+      }, 2000);
+    }
+
     const wrap = document.createElement('div');
     wrap.className = 'copy-btn-wrap';
 
-    const btn = document.createElement('button');
-    btn.className = 'copy-btn';
-    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg> Copy`;
-
-    btn.addEventListener('click', async e => {
+    // Text copy button
+    const textBtn = makeBtn(copyIcon, 'Copy text');
+    textBtn.addEventListener('click', async e => {
       e.stopPropagation();
-      const copyIcon = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg> Copy`;
       try {
-        if (bug.screenshot_url) {
-          const res = await fetch(bug.screenshot_url);
-          const blob = await res.blob();
-          const mimeType = blob.type.startsWith('image/') ? blob.type : 'image/png';
-          await navigator.clipboard.write([
-            new ClipboardItem({ [mimeType]: blob })
-          ]);
-        } else {
-          await navigator.clipboard.writeText(text);
-        }
-        btn.innerHTML = '✓ Copied';
-        btn.classList.add('copied');
-        setTimeout(() => {
-          btn.innerHTML = copyIcon;
-          btn.classList.remove('copied');
-        }, 2000);
+        await navigator.clipboard.writeText(text);
+        flashCopied(textBtn, copyIcon, 'Copy text');
       } catch {
         showToast('Copy failed', true);
       }
     });
+    wrap.appendChild(textBtn);
 
-    wrap.appendChild(btn);
+    // Image copy button — only if screenshot exists
+    if (bug.screenshot_url) {
+      const imgBtn = makeBtn(imgIcon, 'Copy img');
+      imgBtn.addEventListener('click', async e => {
+        e.stopPropagation();
+        try {
+          const res = await fetch(bug.screenshot_url);
+          const blob = await res.blob();
+          const mimeType = blob.type.startsWith('image/') ? blob.type : 'image/png';
+          await navigator.clipboard.write([new ClipboardItem({ [mimeType]: blob })]);
+          flashCopied(imgBtn, imgIcon, 'Copy img');
+        } catch {
+          showToast('Copy failed', true);
+        }
+      });
+      wrap.appendChild(imgBtn);
+    }
+
     return wrap;
   }
 
