@@ -450,8 +450,9 @@
     font-family: var(--font); white-space: nowrap;
     border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;
   }
-  .step-btn.filled  { background: var(--blue); color: #fff; }
-  .step-btn.unfilled { background: var(--bg-secondary); color: var(--text-secondary); border: 0.5px solid var(--border-light); }
+  .step-btn.step-done    { background: var(--green-bg); color: var(--green-text); border: 0.5px solid transparent; }
+  .step-btn.step-current { background: var(--blue); color: #fff; font-weight: 600; }
+  .step-btn.step-future  { background: var(--bg-secondary); color: var(--text-tertiary); border: 0.5px solid var(--border-light); }
   .step-btn:hover { filter: brightness(0.95); }
   .step-connector { width: 10px; height: 1px; background: var(--border-light); flex-shrink: 0; }
 
@@ -610,6 +611,43 @@
   .toast.show { display: block; }
   .toast.error { background: var(--red); }
 
+  /* ── List View ── */
+  .kanban.list-mode { display: block; overflow-y: auto; overflow-x: hidden; padding: 16px 20px; }
+  .list-view { width: 100%; }
+  .list-table {
+    width: 100%; border-collapse: collapse;
+    background: var(--bg-primary); border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-lg); overflow: hidden;
+  }
+  .list-table thead tr { border-bottom: 0.5px solid var(--border-light); }
+  .list-table th {
+    padding: 9px 14px; font-size: 10.5px; font-weight: 600;
+    color: var(--text-tertiary); text-align: left;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    background: var(--bg-secondary); white-space: nowrap;
+  }
+  .list-table tbody tr { border-bottom: 0.5px solid var(--border-light); cursor: pointer; transition: background 0.1s; }
+  .list-table tbody tr:last-child { border-bottom: none; }
+  .list-table tbody tr:hover { background: var(--bg-secondary); }
+  .list-table tbody tr.list-selected { background: var(--blue-bg); }
+  .list-table td { padding: 9px 14px; font-size: 13px; vertical-align: middle; }
+  .list-id { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); white-space: nowrap; }
+  .list-title { color: var(--text-primary); font-weight: 500; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 500; white-space: nowrap; }
+  .badge-open     { background: var(--red-bg);    color: var(--red-text); }
+  .badge-progress { background: var(--amber-bg);  color: var(--amber-text); }
+  .badge-fixed    { background: var(--blue-bg);   color: var(--blue-text); }
+  .badge-verified { background: var(--green-bg);  color: var(--green-text); }
+  .badge-closed   { background: var(--bg-secondary); color: var(--text-secondary); }
+
+  /* ── Detail panel: severity badge ── */
+  .severity-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 500; cursor: pointer; transition: filter 0.15s; }
+  .severity-badge:hover { filter: brightness(0.92); }
+  .sev-critical { background: var(--red-bg);    color: var(--red-text); }
+  .sev-high     { background: var(--amber-bg);  color: var(--amber-text); }
+  .sev-medium   { background: var(--blue-bg);   color: var(--blue-text); }
+  .sev-low      { background: var(--bg-secondary); color: var(--text-secondary); }
+
   /* ── Mobile ── */
   .hamburger {
     display: none; position: fixed; top: 12px; left: 12px; z-index: 110;
@@ -646,6 +684,30 @@
 </head>
 <body>
 
+<!-- Fixer Login -->
+<div id="fixer-login" style="display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg-tertiary);">
+  <div style="background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:var(--radius-lg);padding:40px 36px;width:320px;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
+      <div style="width:30px;height:30px;background:var(--text-primary);border-radius:7px;display:flex;align-items:center;justify-content:center;">
+        <svg width="16" height="16" viewBox="0 0 14 14" fill="var(--bg-primary)"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>
+      </div>
+      <span style="font-size:14px;font-weight:600;color:var(--text-primary)">Fixer View</span>
+    </div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;">Sign in to access the fixer dashboard.</p>
+    <label style="display:block;font-size:11.5px;color:var(--text-secondary);font-weight:500;margin-bottom:5px;">Username</label>
+    <input id="login-username" type="text" placeholder="username" autocomplete="username"
+      style="width:100%;padding:8px 11px;font-size:13px;font-family:var(--font);background:var(--bg-secondary);border:0.5px solid var(--border-light);border-radius:var(--radius-md);color:var(--text-primary);outline:none;margin-bottom:12px;">
+    <label style="display:block;font-size:11.5px;color:var(--text-secondary);font-weight:500;margin-bottom:5px;">Password</label>
+    <input id="login-password" type="password" placeholder="password" autocomplete="current-password"
+      style="width:100%;padding:8px 11px;font-size:13px;font-family:var(--font);background:var(--bg-secondary);border:0.5px solid var(--border-light);border-radius:var(--radius-md);color:var(--text-primary);outline:none;margin-bottom:20px;">
+    <div id="login-error" style="display:none;font-size:12px;color:var(--red);margin-bottom:12px;">Incorrect username or password.</div>
+    <button id="login-submit"
+      style="width:100%;padding:9px;background:var(--text-primary);color:var(--bg-primary);border:none;border-radius:var(--radius-md);font-size:13px;font-weight:500;font-family:var(--font);cursor:pointer;">
+      Sign in
+    </button>
+  </div>
+</div>
+
 <!-- Offline Banner -->
 <div class="offline-banner" id="offline-banner">Offline — changes will sync when reconnected</div>
 
@@ -657,7 +719,7 @@
 </button>
 <div class="sidebar-mobile-overlay" id="sidebar-mobile-overlay"></div>
 
-<div class="layout">
+<div class="layout" id="fixer-app" style="display:none">
 
   <!-- ========== SIDEBAR ========== -->
   <aside class="sidebar" id="sidebar">
@@ -715,8 +777,8 @@
       <span class="topbar-title">Bug Tracker</span>
       <span class="topbar-sub">— Fixer View</span>
       <div class="view-toggle">
-        <button class="view-btn active">Board</button>
-        <button class="view-btn">List</button>
+        <button class="view-btn active" id="btn-board">Board</button>
+        <button class="view-btn" id="btn-list">List</button>
       </div>
     </div>
 
@@ -797,6 +859,7 @@
 
   // ---- State ----
   let bugs = [];
+  let viewMode = 'board';
   let filters = { status: null, search: '', module: null, reporter: null, category: null };
   let selectedBugId = null;
   let focusedCardIndex = -1;
@@ -981,8 +1044,19 @@
     }, 200);
   });
 
+  // ---- Render ----
+  function render() {
+    if (viewMode === 'list') renderList();
+    else renderBoard();
+  }
+
   // ---- Render Board ----
   function renderBoard() {
+    if (viewMode === 'list') { renderList(); return; }
+    // Clean up list view
+    const listEl = document.getElementById('list-view');
+    if (listEl) listEl.remove();
+    kanban.classList.remove('list-mode');
     // Remove existing columns
     kanban.querySelectorAll('.column').forEach(c => c.remove());
 
@@ -1033,6 +1107,69 @@
     });
   }
 
+  // ---- Render List ----
+  const BADGE_CLASS = { 'Open':'badge-open','In Progress':'badge-progress','Fixed':'badge-fixed','Verified':'badge-verified','Closed':'badge-closed' };
+
+  function renderList() {
+    kanban.querySelectorAll('.column').forEach(c => c.remove());
+    kanban.classList.add('list-mode');
+
+    let listEl = document.getElementById('list-view');
+    if (!listEl) {
+      listEl = document.createElement('div');
+      listEl.id = 'list-view';
+      listEl.className = 'list-view';
+      kanban.insertBefore(listEl, boardEmpty);
+    }
+
+    const filtered = getFilteredBugs();
+    boardEmpty.classList.toggle('show', filtered.length === 0);
+
+    if (filtered.length === 0) { listEl.innerHTML = ''; return; }
+
+    const table = document.createElement('table');
+    table.className = 'list-table';
+    table.innerHTML = `<thead><tr>
+      <th>ID</th><th>Title</th><th>Module</th>
+      <th>Reporter</th><th>Status</th><th>Date</th><th></th>
+    </tr></thead>`;
+
+    const tbody = document.createElement('tbody');
+    const reporterInitials = { 'Darren':'D','Richie':'R','Raymond':'RA' };
+    const reporterChipClass = { 'Darren':'chip-d','Richie':'chip-r','Raymond':'chip-ra' };
+
+    filtered.forEach(bug => {
+      const tr = document.createElement('tr');
+      if (bug.id === selectedBugId) tr.classList.add('list-selected');
+      const date = new Date(bug.created_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+      const parts = (bug.module || '').split(' / ');
+      const initials = reporterInitials[bug.reporter] || (bug.reporter||'?').charAt(0).toUpperCase();
+      const chipCls = reporterChipClass[bug.reporter] || 'chip-d';
+      const badgeCls = BADGE_CLASS[bug.status] || 'badge-closed';
+
+      tr.innerHTML = `
+        <td><span class="list-id">${esc(bug.bug_id)}</span></td>
+        <td><span class="list-title">${esc(bug.title)}</span></td>
+        <td>${parts[0] ? `<span class="tag">${esc(parts[0])}</span>${parts[1]?` <span class="tag">${esc(parts[1])}</span>`:''}` : '—'}</td>
+        <td><span class="reporter-chip ${chipCls}">${esc(initials)}</span></td>
+        <td><span class="status-badge ${badgeCls}">${esc(bug.status)}</span></td>
+        <td style="font-size:12px;color:var(--text-tertiary);white-space:nowrap">${date}</td>
+        <td></td>
+      `;
+      tr.cells[6].appendChild(createCopyButton(bug));
+      tr.addEventListener('click', e => {
+        if (e.target.closest('.copy-btn-wrap')) return;
+        openDetail(bug.id);
+        renderList(); // refresh selection highlight
+      });
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    listEl.innerHTML = '';
+    listEl.appendChild(table);
+  }
+
   // ---- Create Copy Buttons ----
   function createCopyButton(bug) {
     const parts = (bug.module || '').split(' / ');
@@ -1042,19 +1179,16 @@
 
     const reportedDate = new Date(bug.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-    const text = `## BUG REPORT — ${bug.bug_id}
+    const text = `I have a bug report that needs to be fixed. Here are the details:
 
-**Title:** ${bug.title}
-**Module:** ${moduleStr}
-**Reporter:** ${bug.reporter}
-**Status:** ${bug.status}
-**Reported:** ${reportedDate}
+Bug ID: ${bug.bug_id}
+Title: ${bug.title}
+Module: ${moduleStr}
+Reported by: ${bug.reporter} on ${reportedDate}
+Current status: ${bug.status}
+${bug.fix_notes ? `Fix notes so far: ${bug.fix_notes}` : ''}
 
-**Description:**
-${bug.title}
-
-**Screenshot (before):** ${bug.screenshot_url || 'None'}
-**Fix Notes:** ${bug.fix_notes || 'Not added yet'}`;
+Please analyze this bug and help me fix it. The issue is in the ${moduleStr} module. ${bug.title}. Walk me through the likely cause and the exact code changes needed to resolve it.`;
 
     const copyIcon = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>`;
     const imgIcon = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="10" rx="1.5"/><circle cx="5.5" cy="7" r="1.2"/><path d="M1 11l4-4 3 3 2-2 4 4"/></svg>`;
@@ -1280,8 +1414,9 @@ ${bug.title}
   }
 
   function renderDetail(bug) {
-    const sevColor = SEVERITY_COLORS[bug.severity] || SEVERITY_COLORS.Medium;
     const createdDate = new Date(bug.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const sev = bug.severity || 'Medium';
+    const sevCls = { Critical: 'sev-critical', High: 'sev-high', Medium: 'sev-medium', Low: 'sev-low' }[sev] || 'sev-medium';
 
     const screenshotHtml = bug.screenshot_url ? `
       <div class="detail-screenshot">
@@ -1289,11 +1424,11 @@ ${bug.title}
       </div>
     ` : '';
 
+    const currentIdx = ALL_STATUSES.indexOf(bug.status);
     const stepperHtml = ALL_STATUSES.map((s, i) => {
-      const currentIdx = ALL_STATUSES.indexOf(bug.status);
-      const filled = i <= currentIdx;
+      const cls = i < currentIdx ? 'step-done' : i === currentIdx ? 'step-current' : 'step-future';
       const connector = i < ALL_STATUSES.length - 1 ? '<span class="step-connector"></span>' : '';
-      return `<button class="step-btn ${filled ? 'filled' : 'unfilled'}" data-step-status="${esc(s)}">${esc(s)}</button>${connector}`;
+      return `<button class="step-btn ${cls}" data-step-status="${esc(s)}">${esc(s)}</button>${connector}`;
     }).join('');
 
     detailInner.innerHTML = `
@@ -1308,14 +1443,14 @@ ${bug.title}
         <span class="meta-item">${esc(bug.reporter)}</span>
         <span class="meta-pill">${esc(bug.module || '—')}</span>
         <span class="meta-item">${createdDate}</span>
-        <span class="severity-dot" id="detail-severity-dot" style="background:${sevColor};color:${sevColor}" title="${esc(bug.severity || 'Medium')}"></span>
+        <span class="severity-badge ${sevCls}" id="detail-severity-dot" title="Click to cycle severity">${esc(sev)}</span>
       </div>
-
-      ${screenshotHtml}
 
       <div class="status-stepper" id="status-stepper">
         ${stepperHtml}
       </div>
+
+      ${screenshotHtml}
 
       <div class="detail-section">
         <div class="detail-label">Fix Notes <span class="saved-indicator" id="fix-saved">Saved</span></div>
@@ -1679,8 +1814,56 @@ ${bug.title}
     window.addEventListener('online', () => { banner.classList.remove('show'); showToast('Back online'); });
   }
 
-  // ---- Boot ----
-  init();
+  // ---- View Toggle ----
+  document.getElementById('btn-board').addEventListener('click', () => {
+    if (viewMode === 'board') return;
+    viewMode = 'board';
+    document.getElementById('btn-board').classList.add('active');
+    document.getElementById('btn-list').classList.remove('active');
+    renderBoard();
+  });
+  document.getElementById('btn-list').addEventListener('click', () => {
+    if (viewMode === 'list') return;
+    viewMode = 'list';
+    document.getElementById('btn-list').classList.add('active');
+    document.getElementById('btn-board').classList.remove('active');
+    renderList();
+  });
+
+  // ---- Fixer Login ----
+  (function() {
+    const loginEl   = document.getElementById('fixer-login');
+    const appEl     = document.getElementById('fixer-app');
+    const usernameEl = document.getElementById('login-username');
+    const passwordEl = document.getElementById('login-password');
+    const submitBtn  = document.getElementById('login-submit');
+    const errorEl    = document.getElementById('login-error');
+
+    function unlock() {
+      loginEl.style.display = 'none';
+      appEl.style.display   = 'flex';
+      init();
+    }
+
+    // Auto-unlock if already authenticated this session
+    if (sessionStorage.getItem('fixer-auth') === '1') { unlock(); return; }
+
+    submitBtn.addEventListener('click', attempt);
+    [usernameEl, passwordEl].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') attempt(); }));
+
+    function attempt() {
+      if (usernameEl.value.trim() === 'richienv' && passwordEl.value === '121212') {
+        sessionStorage.setItem('fixer-auth', '1');
+        unlock();
+      } else {
+        errorEl.style.display = 'block';
+        passwordEl.value = '';
+        passwordEl.focus();
+      }
+    }
+  })();
+
+  // init() is called from the login flow above
 </script>
 </body>
 </html>
