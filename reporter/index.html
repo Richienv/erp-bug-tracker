@@ -177,6 +177,35 @@
   .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
   .field-label { font-size: 11.5px; color: var(--text-secondary); font-weight: 500; }
 
+  /* ── Steps builder ── */
+  .steps-builder { display: flex; flex-direction: column; gap: 10px; }
+  .steps-row { display: flex; flex-direction: column; gap: 6px; }
+  .steps-row-label { font-size: 11px; color: var(--text-tertiary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+  .steps-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .steps-chip {
+    padding: 4px 11px; border-radius: 20px; font-size: 12px; font-family: var(--font);
+    border: 0.5px solid var(--border-light); background: var(--bg-secondary);
+    color: var(--text-secondary); cursor: pointer; user-select: none;
+    transition: all 0.1s;
+  }
+  .steps-chip:hover { border-color: var(--border-mid); color: var(--text-primary); }
+  .steps-chip.active { background: var(--text-primary); color: var(--bg-primary); border-color: var(--text-primary); }
+  .steps-detail {
+    width: 100%; padding: 6px 10px; font-size: 12.5px; font-family: var(--font);
+    background: var(--bg-secondary); border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-md); color: var(--text-primary); outline: none;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .steps-detail:focus { border-color: var(--border-strong); background: var(--bg-primary); }
+  .steps-detail::placeholder { color: var(--text-tertiary); }
+  .steps-preview {
+    font-size: 12px; color: var(--text-secondary); line-height: 1.5;
+    padding: 8px 10px; background: var(--bg-secondary);
+    border-radius: var(--radius-sm); border: 0.5px solid var(--border-light);
+    display: none; font-style: italic;
+  }
+  .steps-preview.show { display: block; }
+
   .field-input, .field-select { width: 100%; padding: 8px 11px; font-size: 13px; font-family: var(--font); background: var(--bg-secondary); border: 0.5px solid var(--border-light); border-radius: var(--radius-md); color: var(--text-primary); outline: none; transition: border-color 0.12s, background 0.12s; appearance: none; -webkit-appearance: none; }
   .field-input:focus, .field-select:focus { border-color: var(--border-strong); background: var(--bg-primary); }
   .field-input::placeholder { color: var(--text-tertiary); }
@@ -477,7 +506,44 @@
 
       <div class="field">
         <label class="field-label">Steps to reproduce <span style="color:var(--text-tertiary);font-weight:400">(optional)</span></label>
-        <textarea class="field-input" id="steps-input" rows="3" placeholder="1. Go to...&#10;2. Click...&#10;3. Expected X, got Y..."></textarea>
+        <div class="steps-builder" id="steps-builder">
+
+          <div class="steps-row">
+            <div class="steps-row-label">I tried to</div>
+            <div class="steps-chips" id="action-chips">
+              <button type="button" class="steps-chip" data-val="open">open</button>
+              <button type="button" class="steps-chip" data-val="click">click</button>
+              <button type="button" class="steps-chip" data-val="submit a form">submit form</button>
+              <button type="button" class="steps-chip" data-val="save">save</button>
+              <button type="button" class="steps-chip" data-val="delete">delete</button>
+              <button type="button" class="steps-chip" data-val="search / filter">search / filter</button>
+              <button type="button" class="steps-chip" data-val="load / refresh">load / refresh</button>
+              <button type="button" class="steps-chip" data-val="navigate to">navigate to</button>
+            </div>
+            <input class="steps-detail" id="action-detail" type="text" placeholder="what exactly? (optional)">
+          </div>
+
+          <div class="steps-row">
+            <div class="steps-row-label">It</div>
+            <div class="steps-chips" id="result-chips">
+              <button type="button" class="steps-chip" data-val="nothing happened">nothing happened</button>
+              <button type="button" class="steps-chip" data-val="showed an error">showed an error</button>
+              <button type="button" class="steps-chip" data-val="showed wrong data">showed wrong data</button>
+              <button type="button" class="steps-chip" data-val="crashed / froze">crashed / froze</button>
+              <button type="button" class="steps-chip" data-val="was disabled / greyed out">was disabled</button>
+              <button type="button" class="steps-chip" data-val="was missing entirely">was missing</button>
+            </div>
+          </div>
+
+          <div class="steps-row">
+            <div class="steps-row-label">I expected</div>
+            <input class="steps-detail" id="expected-detail" type="text" placeholder="what should have happened?">
+          </div>
+
+          <div class="steps-preview" id="steps-preview"></div>
+        </div>
+        <!-- Hidden value consumed by submit -->
+        <input type="hidden" id="steps-input">
       </div>
 
       <div class="two-col">
@@ -637,7 +703,8 @@
   const loginBtn        = $('login-btn');
   const mainView        = $('main-view');
   const titleInput      = $('title-input');
-  const stepsInput      = $('steps-input');
+  const stepsInput      = $('steps-input');   // hidden, assembled by builder
+  const stepsPreview    = $('steps-preview');
   const moduleSelect    = $('module-select');
   const submoduleField  = $('submodule-field');
   const submoduleSelect = $('submodule-select');
@@ -685,6 +752,77 @@
     }
     return top.charAt(0).toUpperCase() + top.slice(1);
   }
+
+  /* ============================================================
+     0. Steps builder
+     ============================================================ */
+  (function() {
+    let selAction = '';
+    let selResult = '';
+
+    function buildStepsValue() {
+      const actionDetail   = $('action-detail').value.trim();
+      const expectedDetail = $('expected-detail').value.trim();
+
+      if (!selAction && !selResult && !expectedDetail) return '';
+
+      let sentence = '';
+      if (selAction) {
+        sentence += `Tried to ${selAction}`;
+        if (actionDetail) sentence += ` — ${actionDetail}`;
+        sentence += '.';
+      }
+      if (selResult) {
+        sentence += (sentence ? ' ' : '') + selResult.charAt(0).toUpperCase() + selResult.slice(1) + '.';
+      }
+      if (expectedDetail) {
+        sentence += (sentence ? ' ' : '') + `Expected: ${expectedDetail}.`;
+      }
+      return sentence;
+    }
+
+    function refresh() {
+      const val = buildStepsValue();
+      stepsInput.value = val;
+      if (val) {
+        stepsPreview.textContent = val;
+        stepsPreview.classList.add('show');
+      } else {
+        stepsPreview.classList.remove('show');
+      }
+    }
+
+    $('action-chips').addEventListener('click', e => {
+      const chip = e.target.closest('.steps-chip');
+      if (!chip) return;
+      if (selAction === chip.dataset.val) {
+        selAction = '';
+        chip.classList.remove('active');
+      } else {
+        $('action-chips').querySelectorAll('.steps-chip').forEach(c => c.classList.remove('active'));
+        selAction = chip.dataset.val;
+        chip.classList.add('active');
+      }
+      refresh();
+    });
+
+    $('result-chips').addEventListener('click', e => {
+      const chip = e.target.closest('.steps-chip');
+      if (!chip) return;
+      if (selResult === chip.dataset.val) {
+        selResult = '';
+        chip.classList.remove('active');
+      } else {
+        $('result-chips').querySelectorAll('.steps-chip').forEach(c => c.classList.remove('active'));
+        selResult = chip.dataset.val;
+        chip.classList.add('active');
+      }
+      refresh();
+    });
+
+    $('action-detail').addEventListener('input', refresh);
+    $('expected-detail').addEventListener('input', refresh);
+  })();
 
   /* ============================================================
      1. Login
@@ -909,6 +1047,11 @@
     // Reset form
     titleInput.value = '';
     stepsInput.value = '';
+    // Reset steps builder
+    document.querySelectorAll('#action-chips .steps-chip, #result-chips .steps-chip').forEach(c => c.classList.remove('active'));
+    if ($('action-detail'))   $('action-detail').value = '';
+    if ($('expected-detail')) $('expected-detail').value = '';
+    stepsPreview.classList.remove('show');
     moduleSelect.value = '';
     categorySelect.value = '';
     submoduleField.classList.remove('visible');
