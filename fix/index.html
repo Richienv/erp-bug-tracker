@@ -22,7 +22,10 @@
     .rail.collapsed { width: 48px; }
     .rail.collapsed .rail-inner { opacity: 0; pointer-events: none; }
     .rail.collapsed .rail-collapsed-strip { opacity: 1; pointer-events: auto; }
-    .rail-inner { transition: opacity 0.2s ease; }
+    .rail-inner {
+      transition: opacity 0.2s ease;
+      display: flex; flex-direction: column; flex: 1; overflow: hidden;
+    }
 
     .rail-header {
       padding: 20px 16px; border-bottom: 1px solid var(--border);
@@ -731,7 +734,7 @@
               <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${STATUS_COLORS[status].dot}"></span>
               ${esc(status)}
             </div>
-            <span class="column-count">${colBugs.length}</span>
+            <span class="column-count" style="background:${STATUS_COLORS[status].bg};color:${STATUS_COLORS[status].dot}">${colBugs.length}</span>
           </div>
           <div class="column-body" data-status="${esc(status)}"></div>
         `;
@@ -785,7 +788,7 @@
         <div class="card-title">${esc(bug.title)}</div>
         <div class="card-bottom">
           <span class="card-module">${esc(bug.module || '—')}</span>
-          <span class="severity-dot" style="background:${sevColor}" title="${esc(bug.severity)}"></span>
+          <span class="severity-dot" style="background:${sevColor};color:${sevColor}" title="${esc(bug.severity)}"></span>
           <span class="card-reporter">${esc(bug.reporter)}</span>
         </div>
         ${thumbHtml}
@@ -918,9 +921,11 @@
       `).join('');
 
       collapsedStats.querySelectorAll('.rail-collapsed-stat').forEach(el => {
-        el.addEventListener('click', () => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
           const s = el.dataset.status;
           filters.status = filters.status === s ? null : s;
+          setRailCollapsed(false);
           renderBoard();
           renderStats();
           renderActiveFilters();
@@ -929,13 +934,20 @@
     }
 
     // ---- Module Popover ----
+    // Map sub-module name to display label
+    function moduleDisplayName(moduleName) {
+      // Finance sub-modules get prefixed
+      if (MODULES.Finance.includes(moduleName)) return `Finance / ${moduleName}`;
+      return moduleName;
+    }
+
     function buildModulePopover() {
       let html = `<div class="module-option${!filters.module ? ' active' : ''}" data-module="">All modules</div>`;
       for (const [group, modules] of Object.entries(MODULES)) {
         html += `<div class="module-group-label">${esc(group.toUpperCase())}</div>`;
         modules.forEach(m => {
-          const displayName = group === 'Finance' ? `Finance / ${m}` : m;
-          html += `<div class="module-option${filters.module === displayName ? ' active' : ''}" data-module="${esc(displayName)}">${esc(displayName)}</div>`;
+          const display = group === 'Finance' ? `Finance / ${m}` : m;
+          html += `<div class="module-option${filters.module === m ? ' active' : ''}" data-module="${esc(m)}" data-display="${esc(display)}">${esc(display)}</div>`;
         });
       }
       modulePopover.innerHTML = html;
@@ -943,7 +955,7 @@
       modulePopover.querySelectorAll('.module-option').forEach(opt => {
         opt.addEventListener('click', () => {
           filters.module = opt.dataset.module || null;
-          moduleTriggerText.textContent = filters.module || 'All modules';
+          moduleTriggerText.textContent = filters.module ? moduleDisplayName(filters.module) : 'All modules';
           modulePopover.classList.remove('open');
           renderBoard();
           renderStats();
@@ -951,12 +963,13 @@
           buildModulePopover();
         });
       });
-
-      moduleTrigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        modulePopover.classList.toggle('open');
-      });
     }
+
+    // Module trigger click (once, outside rebuild loop)
+    moduleTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      modulePopover.classList.toggle('open');
+    });
 
     // ---- Reporter Pills ----
     function buildReporterPills() {
@@ -1000,7 +1013,7 @@
     function renderActiveFilters() {
       const chips = [];
       if (filters.status) chips.push({ key: 'status', label: filters.status });
-      if (filters.module) chips.push({ key: 'module', label: filters.module });
+      if (filters.module) chips.push({ key: 'module', label: moduleDisplayName(filters.module) });
       if (filters.reporter) chips.push({ key: 'reporter', label: filters.reporter });
       if (filters.severity) chips.push({ key: 'severity', label: filters.severity });
       if (filters.search) chips.push({ key: 'search', label: `"${filters.search}"` });
@@ -1135,7 +1148,8 @@
       const stepperHtml = ALL_STATUSES.map((s, i) => {
         const currentIdx = ALL_STATUSES.indexOf(bug.status);
         const filled = i <= currentIdx;
-        return `<button class="step-btn ${filled ? 'filled' : 'unfilled'}" data-step-status="${esc(s)}">${esc(s)}</button>`;
+        const connector = i < ALL_STATUSES.length - 1 ? '<span class="step-connector"></span>' : '';
+        return `<button class="step-btn ${filled ? 'filled' : 'unfilled'}" data-step-status="${esc(s)}">${esc(s)}</button>${connector}`;
       }).join('');
 
       detailInner.innerHTML = `
@@ -1150,7 +1164,7 @@
           <span class="meta-item">${esc(bug.reporter)}</span>
           <span class="meta-pill">${esc(bug.module || '—')}</span>
           <span class="meta-item">${createdDate}</span>
-          <span class="severity-dot" id="detail-severity-dot" style="background:${sevColor}" title="${esc(bug.severity)}"></span>
+          <span class="severity-dot" id="detail-severity-dot" style="background:${sevColor};color:${sevColor}" title="${esc(bug.severity)}"></span>
         </div>
 
         ${screenshotHtml}

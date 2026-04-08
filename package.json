@@ -7,6 +7,8 @@
     "doc": "docs"
   },
   "scripts": {
+    "dev": "npx serve . -l 3000",
+    "build": "echo 'Static site — no build step'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

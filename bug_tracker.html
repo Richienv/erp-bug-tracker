@@ -1,603 +1,536 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ERP Bug Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ERP Feedback — Darren</title>
 <style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
   :root {
-    --bg: #faf9f7;
-    --surface: #f2f0ec;
-    --border: #e8e5df;
-    --text: #1a1a1a;
-    --muted: #8c8a85;
-    --accent: #d97706;
-    --accent-light: #fef3c7;
-    --white: #ffffff;
-    --mono: 'JetBrains Mono', monospace;
-    --sans: 'Inter', sans-serif;
-    --radius: 8px;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f4f0;
+    --bg-tertiary: #f0efe9;
+    --text-primary: #1a1a18;
+    --text-secondary: #5a5a56;
+    --text-tertiary: #9a9a94;
+    --border-light: rgba(0,0,0,0.08);
+    --border-mid: rgba(0,0,0,0.14);
+    --border-strong: rgba(0,0,0,0.22);
+    --radius-sm: 6px;
+    --radius-md: 8px;
     --radius-lg: 12px;
+    --green: #1D9E75;
+    --green-bg: #E1F5EE;
+    --green-text: #0F6E56;
+    --red: #E24B4A;
+    --red-bg: #FCEBEB;
+    --red-text: #A32D2D;
+    --amber: #EF9F27;
+    --amber-bg: #FAEEDA;
+    --amber-text: #854F0B;
+    --blue-bg: #E6F1FB;
+    --blue-text: #185FA5;
+    --font: -apple-system, 'Söhne', 'Inter', BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; min-height: 100vh; -webkit-font-smoothing: antialiased; }
 
-  /* Layout */
-  .app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  html, body { height: 100%; font-family: var(--font); background: var(--bg-tertiary); color: var(--text-primary); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
 
-  /* Top Nav */
-  .topnav { display: flex; align-items: center; gap: 0; padding: 0 24px; height: 52px; border-bottom: 1px solid var(--border); background: var(--white); flex-shrink: 0; position: sticky; top: 0; z-index: 10; }
-  .brand { font-size: 15px; font-weight: 600; color: var(--text); margin-right: 20px; white-space: nowrap; letter-spacing: -0.2px; }
-  .nav-tabs { display: flex; align-items: center; gap: 2px; flex: 1; }
-  .nav-tab { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border: none; background: none; font-family: var(--sans); font-size: 13px; color: var(--muted); cursor: pointer; border-radius: var(--radius); border-bottom: 2px solid transparent; transition: color 0.12s; height: 52px; }
-  .nav-tab:hover { color: var(--text); }
-  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
-  .tab-count { font-size: 11px; background: var(--surface); color: var(--muted); padding: 1px 6px; border-radius: 999px; font-family: var(--sans); }
-  .nav-tab.active .tab-count { background: var(--accent-light); color: var(--accent); }
-  .nav-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .page { display: flex; min-height: 100vh; }
 
-  /* Search + Controls */
-  .search-wrap { display: flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: var(--radius); padding: 0 10px; background: var(--white); }
-  .search-wrap input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; padding: 6px 0; width: 170px; font-family: var(--sans); }
-  .search-wrap input::placeholder { color: var(--muted); }
-  select { background: var(--white); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 10px; font-size: 13px; font-family: var(--sans); outline: none; cursor: pointer; }
-  select:focus { border-color: var(--accent); }
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; font-family: var(--sans); transition: all 0.12s; white-space: nowrap; }
-  .btn-primary { background: var(--accent); color: #fff; }
-  .btn-primary:hover { background: #b45309; }
-  .btn-ghost { background: none; color: var(--muted); border-color: var(--border); }
-  .btn-ghost:hover { color: var(--text); background: var(--surface); }
-  .btn-danger { background: none; color: #dc2626; border-color: #fecaca; }
-  .btn-danger:hover { background: #fff1f1; }
-  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 210px;
+    min-width: 210px;
+    background: var(--bg-secondary);
+    border-right: 0.5px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
 
-  /* (Stats row removed — counts live in nav tabs) */
+  .sidebar-top {
+    padding: 18px 16px 14px;
+    border-bottom: 0.5px solid var(--border-light);
+  }
 
-  /* Bug table */
-  .table-wrap { flex: 1; overflow-y: auto; }
-  .table-header { display: grid; grid-template-columns: 80px 1fr 130px 90px 110px 20px; gap: 12px; padding: 9px 28px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; }
-  .bug-row { display: grid; grid-template-columns: 80px 1fr 130px 90px 110px 20px; gap: 12px; padding: 11px 28px; border-bottom: 1px solid var(--border); align-items: center; cursor: pointer; transition: background 0.1s; }
-  .bug-row:hover { background: var(--surface); }
-  .bug-id { font-family: var(--mono); font-size: 11px; color: var(--muted); }
-  .bug-title-text { font-size: 13px; font-weight: 500; color: var(--text); }
-  .bug-module { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; white-space: nowrap; }
-  .s-Open { background: #fff1f1; color: #dc2626; }
-  .s-InProgress { background: #fffbeb; color: #d97706; }
-  .s-Fixed { background: #eff6ff; color: #2563eb; }
-  .s-Verified { background: #f0fdf4; color: #16a34a; }
-  .s-Closed { background: #f5f5f5; color: #6b7280; }
-  .bug-reporter { font-size: 12px; color: var(--muted); }
-  .bug-date { font-size: 11px; color: var(--muted); font-family: var(--mono); }
-  .bug-attach { color: var(--muted); display: flex; align-items: center; }
+  .sidebar-logo { display: flex; align-items: center; gap: 9px; }
 
-  /* Side panel */
-  .panel-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.15); z-index: 40; }
-  .side-panel { position: fixed; top: 0; right: 0; width: 420px; height: 100vh; background: var(--white); border-left: 1px solid var(--border); z-index: 50; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.2s ease; }
-  .side-panel.open { transform: translateX(0); }
-  .panel-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-  .panel-id { font-family: var(--mono); font-size: 11px; color: var(--muted); }
-  .panel-close { background: none; border: none; font-size: 18px; color: var(--muted); cursor: pointer; line-height: 1; padding: 2px 4px; font-family: var(--sans); }
-  .panel-close:hover { color: var(--text); }
-  .panel-body { flex: 1; overflow-y: auto; padding: 20px; }
-  .panel-title { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 8px; line-height: 1.4; }
-  .panel-module { display: inline-block; font-size: 11px; background: var(--surface); color: var(--muted); padding: 2px 9px; border-radius: 999px; margin-bottom: 20px; }
-  .panel-section { margin-bottom: 18px; }
-  .panel-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 6px; }
-  .panel-val { font-size: 13px; color: var(--text); line-height: 1.6; white-space: pre-wrap; }
-  .panel-val.empty { color: var(--muted); font-style: italic; }
-  .panel-imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .panel-img-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 6px; }
-  .panel-img-frame { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; min-height: 80px; display: flex; align-items: center; justify-content: center; }
-  .panel-img-frame img { width: 100%; height: auto; max-height: 200px; object-fit: contain; cursor: zoom-in; }
-  .panel-img-empty { font-size: 11px; color: var(--muted); padding: 16px; }
-  .panel-actions { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; align-items: center; }
-  .del-confirm { width: 100%; background: #fff1f1; border: 1px solid #fecaca; border-radius: var(--radius); padding: 8px 12px; font-size: 12px; color: #dc2626; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .logo-mark {
+    width: 26px; height: 26px;
+    background: var(--text-primary);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+  }
 
-  /* Empty state */
-  .empty-state { text-align: center; padding: 80px 20px; color: var(--muted); }
-  .empty-state-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.3; }
-  .empty-state-text { font-size: 15px; margin-bottom: 4px; color: var(--text); font-weight: 500; }
-  .empty-state-sub { font-size: 13px; }
+  .logo-mark svg { width: 14px; height: 14px; fill: var(--bg-primary); }
+  .logo-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
 
-  /* Modal overlay */
-  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.25); display: flex; align-items: flex-start; justify-content: center; z-index: 100; padding: 48px 20px; overflow-y: auto; }
-  .modal { background: var(--white); border-radius: var(--radius-lg); width: 100%; max-width: 560px; padding: 28px; box-shadow: 0 8px 32px rgba(0,0,0,0.10); }
-  .modal-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .form-group { }
-  .form-group.full { grid-column: 1/-1; }
-  .form-group label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 5px; }
-  .form-group input, .form-group select, .form-group textarea { width: 100%; background: var(--white); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; font-size: 13px; font-family: var(--sans); outline: none; transition: border-color 0.15s; }
-  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
-  .form-group textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
-  .img-upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .upload-zone { border: 1px dashed var(--border); border-radius: var(--radius); padding: 12px; text-align: center; transition: border-color 0.15s; background: var(--bg); }
-  .upload-zone:hover { border-color: var(--accent); }
-  .upload-zone-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 8px; }
-  .upload-zone img { width: 100%; max-height: 140px; object-fit: contain; border-radius: 6px; margin-bottom: 6px; }
-  .upload-zone input[type=file] { font-size: 11px; color: var(--muted); width: 100%; }
-  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .nav-section { padding: 10px 8px 4px; }
 
-  /* Lightbox */
-  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 200; cursor: zoom-out; }
-  .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: var(--radius); box-shadow: 0 24px 64px rgba(0,0,0,0.4); }
+  .nav-label {
+    font-size: 10.5px;
+    color: var(--text-tertiary);
+    padding: 6px 8px 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 500;
+  }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.12s, color 0.12s;
+  }
 
-  .hidden { display: none !important; }
+  .nav-item:hover { background: var(--bg-primary); color: var(--text-primary); }
+  .nav-item.active { background: var(--bg-primary); color: var(--text-primary); }
+  .nav-item svg { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.55; }
+
+  .nav-badge {
+    margin-left: auto;
+    font-size: 10.5px;
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: 500;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px 14px;
+    border-top: 0.5px solid var(--border-light);
+    display: flex; align-items: center; gap: 9px;
+  }
+
+  .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--blue-bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: var(--blue-text);
+    flex-shrink: 0;
+  }
+
+  .footer-name { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+  .footer-role { font-size: 11px; color: var(--text-tertiary); }
+
+  /* ── Main ── */
+  .main { flex: 1; padding: 36px 40px; max-width: 680px; }
+
+  .page-header { margin-bottom: 28px; }
+
+  .greeting-row { display: flex; align-items: center; gap: 10px; margin-bottom: 3px; }
+
+  .avatar-lg {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--blue-bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; color: var(--blue-text);
+  }
+
+  h1 { font-size: 20px; font-weight: 500; color: var(--text-primary); }
+  .page-sub { font-size: 13px; color: var(--text-tertiary); margin-left: 44px; }
+
+  /* ── Card ── */
+  .card {
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .card-label {
+    font-size: 12px; font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+  .field:last-of-type { margin-bottom: 0; }
+
+  .field-label { font-size: 11.5px; color: var(--text-secondary); font-weight: 500; }
+
+  .field-input, .field-select {
+    width: 100%;
+    padding: 8px 11px;
+    font-size: 13px;
+    font-family: var(--font);
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.12s, background 0.12s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .field-input:focus, .field-select:focus {
+    border-color: var(--border-strong);
+    background: var(--bg-primary);
+  }
+
+  .field-input::placeholder { color: var(--text-tertiary); }
+
+  textarea.field-input {
+    min-height: 76px;
+    resize: vertical;
+    line-height: 1.55;
+  }
+
+  .select-wrapper { position: relative; }
+
+  .select-wrapper::after {
+    content: '';
+    position: absolute;
+    right: 11px; top: 50%;
+    transform: translateY(-50%);
+    width: 0; height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid var(--text-tertiary);
+    pointer-events: none;
+  }
+
+  .field-select { cursor: pointer; padding-right: 28px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* submodule hidden by default */
+  #submodule-field { display: none; }
+
+  .upload-zone {
+    border: 0.5px dashed var(--border-mid);
+    border-radius: var(--radius-md);
+    padding: 18px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+    background: var(--bg-secondary);
+  }
+
+  .upload-zone:hover { background: var(--bg-tertiary); border-color: var(--border-strong); }
+
+  .upload-icon { width: 28px; height: 28px; margin: 0 auto 7px; opacity: 0.25; }
+  .upload-text { font-size: 12.5px; color: var(--text-secondary); }
+  .upload-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+
+  .submit-btn {
+    width: 100%;
+    padding: 9px;
+    font-size: 13px; font-weight: 500; font-family: var(--font);
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    margin-top: 12px;
+    transition: opacity 0.12s;
+  }
+
+  .submit-btn:hover { opacity: 0.82; }
+  .submit-btn:active { opacity: 0.7; }
+
+  /* ── Bug list ── */
+  .list-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .list-title { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+
+  .list-count {
+    font-size: 11px; color: var(--text-tertiary);
+    background: var(--bg-secondary);
+    padding: 2px 8px; border-radius: 10px;
+  }
+
+  .group-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 0;
+    border-bottom: 0.5px solid var(--border-light);
+    margin-bottom: 0;
+  }
+
+  .group-name { font-size: 11.5px; color: var(--text-tertiary); font-weight: 500; }
+  .group-n { font-size: 11px; color: var(--text-tertiary); }
+
+  .bug-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 0;
+    border-bottom: 0.5px solid var(--border-light);
+    cursor: pointer;
+  }
+
+  .bug-row:last-child { border-bottom: none; }
+
+  .bug-icon {
+    width: 34px; height: 34px; flex-shrink: 0;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .bug-icon svg { width: 15px; height: 15px; stroke: var(--text-tertiary); fill: none; stroke-width: 1.3; }
+
+  .bug-body { flex: 1; min-width: 0; }
+
+  .bug-title {
+    font-size: 13px; font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+
+  .bug-tags { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+
+  .tag {
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 0.5px solid var(--border-light);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .status {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; white-space: nowrap;
+  }
+
+  .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+
+  .s-open .dot { background: var(--red); }
+  .s-open { color: var(--red-text); }
+  .s-fixed .dot { background: var(--green); }
+  .s-fixed { color: var(--green-text); }
+  .s-review .dot { background: var(--amber); }
+  .s-review { color: var(--amber-text); }
+
+  .bug-time { font-size: 11px; color: var(--text-tertiary); flex-shrink: 0; }
 </style>
 </head>
 <body>
+<div class="page">
 
-<div class="app">
-  <!-- Top Nav -->
-  <nav class="topnav">
-    <div class="brand">ERP Bugs</div>
-    <div class="nav-tabs">
-      <button class="nav-tab active" onclick="setStatusFilter('')" id="nav-all">All <span class="tab-count" id="cnt-all">0</span></button>
-      <button class="nav-tab" onclick="setStatusFilter('Open')" id="nav-open">Open <span class="tab-count" id="cnt-open">0</span></button>
-      <button class="nav-tab" onclick="setStatusFilter('In Progress')" id="nav-prog">In Progress <span class="tab-count" id="cnt-prog">0</span></button>
-      <button class="nav-tab" onclick="setStatusFilter('Fixed')" id="nav-fix">Fixed <span class="tab-count" id="cnt-fix">0</span></button>
-      <button class="nav-tab" onclick="setStatusFilter('Verified')" id="nav-ver">Verified <span class="tab-count" id="cnt-ver">0</span></button>
-      <button class="nav-tab" onclick="setStatusFilter('Closed')" id="nav-closed">Closed <span class="tab-count" id="cnt-clo">0</span></button>
-    </div>
-    <div class="nav-right">
-      <div class="search-wrap">
-        <svg width="13" height="13" fill="none" stroke="#8c8a85" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input type="text" id="search-input" placeholder="Search..." oninput="applyFilters()">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-logo">
+        <div class="logo-mark">
+          <svg viewBox="0 0 14 14"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>
+        </div>
+        <span class="logo-name">ERP Feedback</span>
       </div>
-      <select id="filter-module" onchange="applyFilters()">
-        <option value="">All modules</option>
-        <option>Finance / Invoice</option><option>Finance / COA</option><option>Finance / Journal</option>
-        <option>Finance / AR Aging</option><option>Finance / AP Aging</option><option>Finance / Bank Recon</option>
-        <option>Finance / Petty Cash</option><option>Finance / Debit Note</option><option>Finance / Credit Note</option>
-        <option>Finance / Credit Limit</option><option>Inventory</option><option>Purchase</option>
-        <option>Sales</option><option>HR</option><option>Settings</option><option>Dashboard</option><option>Auth</option>
-      </select>
-      <button class="btn btn-primary" onclick="openForm()">+ New Bug</button>
     </div>
-  </nav>
+
+    <div class="nav-section">
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2" stroke-linecap="round"/></svg>
+        Activity
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Reports</div>
+      <div class="nav-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/></svg>
+        Open
+        <span class="nav-badge">1</span>
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 8l3 3 7-7"/></svg>
+        Fixed
+        <span class="nav-badge">1</span>
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 5.5h3" stroke-linecap="round"/></svg>
+        All bugs
+        <span class="nav-badge">2</span>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="avatar">D</div>
+      <div>
+        <div class="footer-name">Darren</div>
+        <div class="footer-role">COO</div>
+      </div>
+    </div>
+  </aside>
 
   <!-- Main -->
-  <div class="main">
-    <div class="table-wrap">
-      <div class="table-header">
-        <span>ID</span><span>Title / Module</span><span>Status</span><span>Reporter</span><span>Date</span><span></span>
+  <main class="main">
+    <div class="page-header">
+      <div class="greeting-row">
+        <div class="avatar-lg">D</div>
+        <h1>Hey Darren</h1>
       </div>
-      <div id="bug-list"></div>
+      <p class="page-sub">Report a bug or check the status of your reports.</p>
     </div>
-  </div>
-</div>
 
-<!-- Side Panel -->
-<div class="panel-backdrop hidden" id="panel-backdrop" onclick="closePanel()"></div>
-<div class="side-panel" id="side-panel">
-  <div class="panel-header">
-    <span class="panel-id" id="panel-bug-id"></span>
-    <button class="panel-close" onclick="closePanel()">×</button>
-  </div>
-  <div class="panel-body" id="panel-body"></div>
-  <div class="panel-actions" id="panel-actions"></div>
-</div>
+    <!-- Report Form -->
+    <div class="card">
+      <div class="card-label">New bug report</div>
 
-<!-- New/Edit Modal -->
-<div class="overlay hidden" id="modal-overlay" onclick="overlayClick(event)">
-  <div class="modal" id="modal">
-    <div class="modal-title">
-      <span id="modal-title-text">Log New Bug</span>
-      <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕ Close</button>
-    </div>
-    <div class="form-grid">
-      <div class="form-group">
-        <label>Reported by</label>
-        <select id="f-reporter">
-          <option>Richie</option><option>Darren</option><option>Raymond</option>
-        </select>
+      <div class="field">
+        <label class="field-label">What went wrong?</label>
+        <textarea class="field-input" placeholder="Describe the issue — what happened, what you expected..."></textarea>
       </div>
-      <div class="form-group">
-        <label>Date reported</label>
-        <input type="date" id="f-date">
-      </div>
-      <div class="form-group full">
-        <label>Module / Page</label>
-        <select id="f-module">
-          <option value="">Select module...</option>
-          <option>Finance / Invoice</option><option>Finance / COA</option><option>Finance / Journal</option>
-          <option>Finance / AR Aging</option><option>Finance / AP Aging</option><option>Finance / Bank Recon</option>
-          <option>Finance / Petty Cash</option><option>Finance / Debit Note</option><option>Finance / Credit Note</option>
-          <option>Finance / Credit Limit</option><option>Inventory</option><option>Purchase</option>
-          <option>Sales</option><option>HR</option><option>Settings</option><option>Dashboard</option><option>Auth</option>
-        </select>
-      </div>
-      <div class="form-group full">
-        <label>Bug title</label>
-        <input type="text" id="f-title" placeholder="Short and specific — e.g. Credit limit not enforced on PUT /invoice">
-      </div>
-      <div class="form-group full">
-        <label>Description — what happened, expected behaviour, steps to reproduce</label>
-        <textarea id="f-desc" style="min-height:90px" placeholder="1. Go to...&#10;2. Do...&#10;3. Expected: ...  Actual: ..."></textarea>
-      </div>
-      <div class="form-group">
-        <label>Status</label>
-        <select id="f-status">
-          <option>Open</option><option>In Progress</option><option>Fixed</option><option>Verified</option><option>Closed</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Date resolved</label>
-        <input type="date" id="f-resolved">
-      </div>
-      <div class="form-group full">
-        <label>Fix description (file · function · what changed — fill after fixing)</label>
-        <textarea id="f-fix" style="min-height:70px" placeholder="e.g. Added credit limit check in invoiceService.ts createInvoice() — throws 422 if balance > limit. db push done."></textarea>
-      </div>
-      <div class="form-group">
-        <label>Verified by</label>
-        <select id="f-verified-by">
-          <option value="">—</option><option>Richie</option><option>Darren</option><option>Raymond</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Notes / links</label>
-        <input type="text" id="f-notes" placeholder="Related bug IDs, Notion, Vercel link...">
-      </div>
-      <div class="form-group full">
-        <label>Screenshots (before & after)</label>
-        <div class="img-upload-grid">
-          <div class="upload-zone" id="before-zone">
-            <div class="upload-zone-lbl">Before</div>
-            <div id="before-preview"></div>
-            <input type="file" accept="image/*" onchange="handleImg(event,'before')" id="before-input">
+
+      <div class="two-col">
+        <div class="field">
+          <label class="field-label">Module</label>
+          <div class="select-wrapper">
+            <select class="field-select" id="module-select" onchange="onModuleChange(this.value)">
+              <option value="">Select module...</option>
+              <option value="finance">Finance</option>
+              <option value="inventory">Inventory</option>
+              <option value="sales">Sales</option>
+              <option value="procurement">Procurement</option>
+              <option value="manufacturing">Manufacturing</option>
+              <option value="hcm">HCM</option>
+              <option value="documents">Documents</option>
+            </select>
           </div>
-          <div class="upload-zone" id="after-zone">
-            <div class="upload-zone-lbl">After</div>
-            <div id="after-preview"></div>
-            <input type="file" accept="image/*" onchange="handleImg(event,'after')" id="after-input">
+        </div>
+
+        <div class="field" id="submodule-field">
+          <label class="field-label">Sub-module</label>
+          <div class="select-wrapper">
+            <select class="field-select" id="submodule-select">
+              <option value="">Select sub-module...</option>
+            </select>
           </div>
         </div>
       </div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitForm()" id="submit-btn">Log Bug</button>
-    </div>
-  </div>
-</div>
 
-<!-- Lightbox -->
-<div class="lightbox hidden" id="lightbox" onclick="this.classList.add('hidden')">
-  <img id="lightbox-img" src="" alt="">
+      <div class="field">
+        <label class="field-label">Category</label>
+        <div class="select-wrapper">
+          <select class="field-select">
+            <option value="">Select category...</option>
+            <option value="button">Button / action not working</option>
+            <option value="missing-data">Missing or wrong data</option>
+            <option value="missing-feature">Missing action / feature</option>
+            <option value="form">Form not submitting</option>
+            <option value="validation">Validation error</option>
+            <option value="ui">UI / display issue</option>
+            <option value="performance">Slow / performance issue</option>
+            <option value="crash">Page crash / error</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Screenshot</label>
+        <div class="upload-zone" onclick="this.querySelector('input').click()">
+          <input type="file" accept="image/*" style="display:none" />
+          <svg class="upload-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.3">
+            <rect x="3" y="5" width="22" height="18" rx="3"/>
+            <circle cx="19" cy="11" r="2.2"/>
+            <path d="M3 20l6-5 4.5 4.5 3.5-3.5L22 20"/>
+          </svg>
+          <div class="upload-text">Drop, paste, or click to add screenshot</div>
+          <div class="upload-hint">1 screenshot per report · PNG, JPG</div>
+        </div>
+      </div>
+
+      <button class="submit-btn">Submit report</button>
+    </div>
+
+    <!-- Bug List -->
+    <div class="card">
+      <div class="list-header">
+        <span class="list-title">Your reports</span>
+        <span class="list-count">2 total</span>
+      </div>
+
+      <div class="group-row">
+        <span class="group-name">Yesterday</span>
+        <span class="group-n">2 reports</span>
+      </div>
+
+      <div class="bug-row">
+        <div class="bug-icon">
+          <svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 5.5h6M5 10.5h4" stroke-linecap="round"/></svg>
+        </div>
+        <div class="bug-body">
+          <div class="bug-title">Finance button gakerja</div>
+          <div class="bug-tags">
+            <span class="tag">Finance</span>
+            <span class="tag">COA</span>
+            <span class="tag">Button / action not working</span>
+            <span class="status s-fixed"><span class="dot"></span>Fixed</span>
+          </div>
+        </div>
+        <div class="bug-time">13h ago</div>
+      </div>
+
+      <div class="bug-row">
+        <div class="bug-icon">
+          <svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 5.5h6M5 10.5h4" stroke-linecap="round"/></svg>
+        </div>
+        <div class="bug-body">
+          <div class="bug-title">Gabisa coba coba</div>
+          <div class="bug-tags">
+            <span class="tag">Finance</span>
+            <span class="tag">Invoice</span>
+            <span class="tag">Missing or wrong data</span>
+            <span class="status s-open"><span class="dot"></span>Open</span>
+          </div>
+        </div>
+        <div class="bug-time">16h ago</div>
+      </div>
+    </div>
+  </main>
 </div>
 
 <script>
-const BUGS_KEY = 'erp-bugs-v3';
-const REPORTERS = ['Richie','Darren','Raymond'];
-const STATUSES = ['Open','In Progress','Fixed','Verified','Closed'];
-
-let state = { bugs: [], filter: { q:'', status:'', module:'' }, panelBugId: null, panelImgs: null, editId: null, formBefore: null, formAfter: null, confirmDelId: null };
-
-// Storage
-async function loadBugs() { try { const r = await window.storage.get(BUGS_KEY); return r ? JSON.parse(r.value) : []; } catch(e) { return []; } }
-async function saveBugs() { try { await window.storage.set(BUGS_KEY, JSON.stringify(state.bugs)); } catch(e) {} }
-async function saveImg(id, t, data) { try { await window.storage.set('bug-img-'+id+'-'+t, data); } catch(e) {} }
-async function loadImgs(id) { let b=null,a=null; try{const r=await window.storage.get('bug-img-'+id+'-before');if(r)b=r.value;}catch(e){} try{const r=await window.storage.get('bug-img-'+id+'-after');if(r)a=r.value;}catch(e){} return{before:b,after:a}; }
-async function delImgs(id) { try{await window.storage.delete('bug-img-'+id+'-before');}catch(e){} try{await window.storage.delete('bug-img-'+id+'-after');}catch(e){} }
-
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function fmt(d){if(!d)return'—';try{return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return d;}}
-function sc(s){return(s||'').replace(/ /g,'');}
-function nextId(){const m=state.bugs.reduce((a,b)=>{const n=parseInt((b.id||'').replace('ERP-',''));return isNaN(n)?a:Math.max(a,n);},0);return'ERP-'+String(m+1).padStart(3,'0');}
-
-function getStats(){
-  const s={tot:0,open:0,prog:0,fix:0,ver:0,clo:0};
-  state.bugs.forEach(b=>{s.tot++;if(b.status==='Open')s.open++;else if(b.status==='In Progress')s.prog++;else if(b.status==='Fixed')s.fix++;else if(b.status==='Verified')s.ver++;else if(b.status==='Closed')s.clo++;});
-  return s;
-}
-function filteredBugs(){
-  const {q,status,module}=state.filter;
-  return state.bugs.filter(b=>{
-    if(q&&!(b.title+' '+b.description+' '+b.id+' '+(b.reportedBy||'')).toLowerCase().includes(q.toLowerCase()))return false;
-    if(status&&b.status!==status)return false;
-    if(module&&b.module!==module)return false;
-    return true;
-  }).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
-}
-
-function updateStats(){
-  const s=getStats();
-  document.getElementById('cnt-all').textContent=s.tot;
-  document.getElementById('cnt-open').textContent=s.open;
-  document.getElementById('cnt-prog').textContent=s.prog;
-  document.getElementById('cnt-fix').textContent=s.fix;
-  document.getElementById('cnt-ver').textContent=s.ver;
-  document.getElementById('cnt-clo').textContent=s.clo;
-}
-
-function renderList(){
-  const bugs=filteredBugs();
-  const list=document.getElementById('bug-list');
-  if(!bugs.length){
-    list.innerHTML=`<div class="empty-state"><div class="empty-state-icon">◎</div><div class="empty-state-text">${state.bugs.length===0?'No bugs logged yet':'No bugs match your filters'}</div><div class="empty-state-sub">${state.bugs.length===0?'Click "+ New Bug" to start tracking':'Try adjusting the filters'}</div></div>`;
-    return;
-  }
-  list.innerHTML=bugs.map(bug=>renderBugRow(bug)).join('');
-}
-
-function renderBugRow(bug){
-  const cls=sc(bug.status);
-  const attachIcon=bug.hasBeforeImg||bug.hasAfterImg
-    ?`<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>`
-    :'';
-  return `<div class="bug-row" id="row-${bug.id}" onclick="openPanel('${bug.id}')">
-    <div class="bug-id">${esc(bug.id)}</div>
-    <div>
-      <div class="bug-title-text">${esc(bug.title)}</div>
-      <div class="bug-module">${esc(bug.module||'—')}</div>
-    </div>
-    <div><span class="badge s-${cls}">${bug.status}</span></div>
-    <div class="bug-reporter">${esc(bug.reportedBy)}</div>
-    <div class="bug-date">${fmt(bug.createdAt)}</div>
-    <div class="bug-attach">${attachIcon}</div>
-  </div>`;
-}
-
-// Nav / filter actions
-function setStatusFilter(s){
-  state.filter.status=s;
-  ['all','open','prog','fix','ver','closed'].forEach(k=>{document.getElementById('nav-'+k)?.classList.remove('active');});
-  const map={'':'all','Open':'open','In Progress':'prog','Fixed':'fix','Verified':'ver','Closed':'closed'};
-  document.getElementById('nav-'+(map[s]||'all'))?.classList.add('active');
-  applyFilters();
-}
-
-
-function applyFilters(){
-  state.filter.q=document.getElementById('search-input')?.value||'';
-  state.filter.module=document.getElementById('filter-module')?.value||'';
-  updateStats();
-  renderList();
-}
-
-// Side panel
-async function openPanel(id){
-  state.panelBugId=id;
-  state.confirmDelId=null;
-  state.panelImgs=null;
-  renderPanel();
-  document.getElementById('side-panel').classList.add('open');
-  document.getElementById('panel-backdrop').classList.remove('hidden');
-  const bug=state.bugs.find(b=>b.id===id);
-  if(bug&&(bug.hasBeforeImg||bug.hasAfterImg)){
-    const imgs=await loadImgs(id);
-    state.panelImgs=imgs;
-    renderPanel();
-  }
-}
-
-function closePanel(){
-  state.panelBugId=null;
-  state.confirmDelId=null;
-  state.panelImgs=null;
-  document.getElementById('side-panel').classList.remove('open');
-  document.getElementById('panel-backdrop').classList.add('hidden');
-}
-
-function renderPanel(){
-  const id=state.panelBugId;
-  if(!id)return;
-  const bug=state.bugs.find(b=>b.id===id);
-  if(!bug){closePanel();return;}
-  const imgs=state.panelImgs;
-  const isDel=state.confirmDelId===id;
-  const nextS={'Open':'In Progress','In Progress':'Fixed','Fixed':'Verified','Verified':'Closed'}[bug.status];
-
-  document.getElementById('panel-bug-id').textContent=bug.id;
-
-  let body=`
-    <div class="panel-title">${esc(bug.title)}</div>
-    ${bug.module?`<div class="panel-module">${esc(bug.module)}</div>`:''}
-    <div class="panel-section">
-      <div class="panel-lbl">Description</div>
-      <div class="panel-val${bug.description?'':' empty'}">${bug.description?esc(bug.description):'Not provided'}</div>
-    </div>
-    <div class="panel-section">
-      <div class="panel-lbl">Fix notes</div>
-      <div class="panel-val${bug.fixDescription?'':' empty'}">${bug.fixDescription?esc(bug.fixDescription):'Not yet fixed'}</div>
-    </div>`;
-
-  if(bug.verifiedBy){
-    body+=`<div class="panel-section">
-      <div class="panel-lbl">Verified by</div>
-      <div class="panel-val">${esc(bug.verifiedBy)}${bug.resolvedAt?' · '+fmt(bug.resolvedAt):''}</div>
-    </div>`;
-  }
-  if(bug.notes){
-    body+=`<div class="panel-section">
-      <div class="panel-lbl">Notes</div>
-      <div class="panel-val">${esc(bug.notes)}</div>
-    </div>`;
-  }
-  if(bug.hasBeforeImg||bug.hasAfterImg){
-    body+=`<div class="panel-section"><div class="panel-lbl">Screenshots</div><div class="panel-imgs">`;
-    if(bug.hasBeforeImg){
-      body+=`<div><div class="panel-img-lbl">Before</div><div class="panel-img-frame">`;
-      body+=imgs&&imgs.before?`<img src="${imgs.before}" onclick="showLightbox('before')" alt="Before">`:`<div class="panel-img-empty">Loading…</div>`;
-      body+=`</div></div>`;
-    }
-    if(bug.hasAfterImg){
-      body+=`<div><div class="panel-img-lbl">After</div><div class="panel-img-frame">`;
-      body+=imgs&&imgs.after?`<img src="${imgs.after}" onclick="showLightbox('after')" alt="After">`:`<div class="panel-img-empty">Loading…</div>`;
-      body+=`</div></div>`;
-    }
-    body+=`</div></div>`;
-  }
-  document.getElementById('panel-body').innerHTML=body;
-
-  let actions='';
-  if(nextS) actions+=`<button class="btn btn-ghost btn-sm" onclick="quickStatus('${id}','${nextS}')">→ ${esc(nextS)}</button>`;
-  actions+=`<button class="btn btn-ghost btn-sm" onclick="editBug('${id}')">Edit</button>`;
-  if(!isDel){
-    actions+=`<button class="btn btn-danger btn-sm" onclick="confirmDel('${id}')">Delete</button>`;
-  } else {
-    actions+=`<div class="del-confirm" style="margin-top:0">Delete ${esc(id)} permanently?
-      <button class="btn btn-danger btn-sm" onclick="doDelete('${id}')">Yes, delete</button>
-      <button class="btn btn-ghost btn-sm" onclick="cancelDel()">Cancel</button>
-    </div>`;
-  }
-  document.getElementById('panel-actions').innerHTML=actions;
-}
-
-// Status quick change
-async function quickStatus(id,ns){
-  const bug=state.bugs.find(b=>b.id===id);if(!bug)return;
-  bug.status=ns;
-  if((ns==='Verified'||ns==='Closed')&&!bug.resolvedAt)bug.resolvedAt=new Date().toISOString().split('T')[0];
-  await saveBugs();updateStats();renderList();
-  if(state.panelBugId===id)renderPanel();
-}
-
-// Delete
-function confirmDel(id){state.confirmDelId=id;renderPanel();}
-function cancelDel(){state.confirmDelId=null;renderPanel();}
-async function doDelete(id){
-  state.bugs=state.bugs.filter(b=>b.id!==id);
-  state.confirmDelId=null;
-  await delImgs(id);await saveBugs();updateStats();renderList();
-  closePanel();
-}
-
-// Form
-function openForm(){
-  state.editId=null;state.formBefore=null;state.formAfter=null;
-  document.getElementById('modal-title-text').textContent='Log New Bug';
-  document.getElementById('submit-btn').textContent='Log Bug';
-  document.getElementById('f-reporter').value='Richie';
-  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
-  document.getElementById('f-module').value='';
-  document.getElementById('f-title').value='';
-  document.getElementById('f-desc').value='';
-  document.getElementById('f-status').value='Open';
-  document.getElementById('f-resolved').value='';
-  document.getElementById('f-fix').value='';
-  document.getElementById('f-verified-by').value='';
-  document.getElementById('f-notes').value='';
-  resetImgPreviews();
-  document.getElementById('modal-overlay').classList.remove('hidden');
-  document.getElementById('f-title').focus();
-}
-
-function editBug(id){
-  const bug=state.bugs.find(b=>b.id===id);if(!bug)return;
-  state.editId=id;state.formBefore=null;state.formAfter=null;
-  document.getElementById('modal-title-text').textContent='Edit · '+id;
-  document.getElementById('submit-btn').textContent='Save Changes';
-  document.getElementById('f-reporter').value=bug.reportedBy||'Richie';
-  document.getElementById('f-date').value=bug.createdAt||'';
-  document.getElementById('f-module').value=bug.module||'';
-  document.getElementById('f-title').value=bug.title||'';
-  document.getElementById('f-desc').value=bug.description||'';
-  document.getElementById('f-status').value=bug.status||'Open';
-  document.getElementById('f-resolved').value=bug.resolvedAt||'';
-  document.getElementById('f-fix').value=bug.fixDescription||'';
-  document.getElementById('f-verified-by').value=bug.verifiedBy||'';
-  document.getElementById('f-notes').value=bug.notes||'';
-  resetImgPreviews();
-  // Load existing images
-  if(bug.hasBeforeImg||bug.hasAfterImg){
-    loadImgs(id).then(imgs=>{
-      if(imgs.before){state.formBefore=imgs.before;showImgPreview('before',imgs.before);}
-      if(imgs.after){state.formAfter=imgs.after;showImgPreview('after',imgs.after);}
-    });
-  }
-  document.getElementById('modal-overlay').classList.remove('hidden');
-}
-
-function closeModal(){document.getElementById('modal-overlay').classList.add('hidden');}
-function overlayClick(e){if(e.target===document.getElementById('modal-overlay'))closeModal();}
-
-function resetImgPreviews(){
-  ['before','after'].forEach(t=>{
-    const p=document.getElementById(t+'-preview');if(p)p.innerHTML='';
-    const i=document.getElementById(t+'-input');if(i){i.style.display='';i.value='';}
-  });
-}
-
-function showImgPreview(t,src){
-  const p=document.getElementById(t+'-preview');
-  const inp=document.getElementById(t+'-input');
-  if(p)p.innerHTML=`<img src="${src}" style="width:100%;max-height:120px;object-fit:contain;border-radius:6px;margin-bottom:6px"><button class="btn btn-ghost btn-sm" onclick="removeImg('${t}')">Remove</button>`;
-  if(inp)inp.style.display='none';
-}
-
-function handleImg(e,t){
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    const data=ev.target.result;
-    if(t==='before')state.formBefore=data;else state.formAfter=data;
-    showImgPreview(t,data);
+  const submodules = {
+    finance: ['COA', 'Invoice', 'AR Aging', 'Credit / Debit Notes', 'Bank Rekonsiliasi', 'Peti Kas', 'Jurnal Manual', 'Laporan Keuangan'],
+    inventory: ['Produk', 'Stok', 'Gudang', 'Transfer Stok', 'Penyesuaian Stok'],
+    sales: ['Sales Order', 'Surat Jalan', 'Invoice Penjualan', 'Retur Penjualan', 'Customer'],
+    procurement: ['Purchase Order', 'Penerimaan Barang', 'Invoice Pembelian', 'Retur Pembelian', 'Supplier'],
+    manufacturing: ['Work Order', 'BOM', 'Produksi', 'Quality Control'],
+    hcm: ['Karyawan', 'Absensi', 'Penggajian', 'Cuti', 'Departemen'],
+    documents: ['Upload Dokumen', 'Template', 'Approval Dokumen'],
   };
-  r.readAsDataURL(f);
-}
 
-function removeImg(t){
-  if(t==='before')state.formBefore=null;else state.formAfter=null;
-  const p=document.getElementById(t+'-preview');if(p)p.innerHTML='';
-  const i=document.getElementById(t+'-input');if(i){i.style.display='';i.value='';}
-}
+  function onModuleChange(val) {
+    const field = document.getElementById('submodule-field');
+    const select = document.getElementById('submodule-select');
 
-async function submitForm(){
-  const title=document.getElementById('f-title')?.value?.trim();
-  if(!title){alert('Bug title is required.');return;}
-  const bug={
-    id:state.editId||nextId(),
-    title,
-    reportedBy:document.getElementById('f-reporter').value,
-    module:document.getElementById('f-module').value,
-    status:document.getElementById('f-status').value,
-    createdAt:document.getElementById('f-date').value||new Date().toISOString().split('T')[0],
-    description:document.getElementById('f-desc').value||'',
-    fixDescription:document.getElementById('f-fix').value||'',
-    verifiedBy:document.getElementById('f-verified-by').value||'',
-    resolvedAt:document.getElementById('f-resolved').value||'',
-    notes:document.getElementById('f-notes').value||'',
-    hasBeforeImg:!!state.formBefore,
-    hasAfterImg:!!state.formAfter,
-  };
-  if(state.editId){
-    const i=state.bugs.findIndex(b=>b.id===state.editId);
-    if(i>=0)state.bugs[i]=bug;
-    if(!state.formBefore)try{await window.storage.delete('bug-img-'+bug.id+'-before');}catch(e){}
-    if(!state.formAfter)try{await window.storage.delete('bug-img-'+bug.id+'-after');}catch(e){}
-  } else {
-    state.bugs.unshift(bug);
+    if (!val || !submodules[val]) {
+      field.style.display = 'none';
+      select.innerHTML = '<option value="">Select sub-module...</option>';
+      return;
+    }
+
+    select.innerHTML = '<option value="">Select sub-module...</option>' +
+      submodules[val].map(s => `<option value="${s.toLowerCase().replace(/\s+/g,'-')}">${s}</option>`).join('');
+
+    field.style.display = 'flex';
   }
-  if(state.formBefore)await saveImg(bug.id,'before',state.formBefore);
-  if(state.formAfter)await saveImg(bug.id,'after',state.formAfter);
-  await saveBugs();
-  const wasPanel=state.panelBugId===bug.id;
-  closeModal();updateStats();renderList();
-  if(wasPanel){state.panelImgs=null;await openPanel(bug.id);}
-}
-
-function showLightbox(t){
-  const imgs=state.panelImgs;if(!imgs)return;
-  const src=t==='before'?imgs.before:imgs.after;if(!src)return;
-  document.getElementById('lightbox-img').src=src;
-  document.getElementById('lightbox').classList.remove('hidden');
-}
-
-async function init(){
-  state.bugs=await loadBugs();
-  updateStats();renderList();
-}
-init();
 </script>
 </body>
 </html>

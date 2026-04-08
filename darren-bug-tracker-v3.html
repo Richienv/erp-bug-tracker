@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ERP Feedback — Reporter View</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f4f0;
+    --bg-tertiary: #f0efe9;
+    --text-primary: #1a1a18;
+    --text-secondary: #5a5a56;
+    --text-tertiary: #9a9a94;
+    --border-light: rgba(0,0,0,0.08);
+    --border-mid: rgba(0,0,0,0.14);
+    --border-strong: rgba(0,0,0,0.22);
+    --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px;
+    --green: #1D9E75; --green-bg: #E1F5EE; --green-text: #0F6E56;
+    --red: #E24B4A; --red-bg: #FCEBEB; --red-text: #A32D2D;
+    --amber: #EF9F27; --amber-bg: #FAEEDA; --amber-text: #854F0B;
+    --blue: #378ADD; --blue-bg: #E6F1FB; --blue-text: #185FA5;
+    --purple-bg: #EEEDFE; --purple-text: #3C3489;
+    --font: -apple-system, 'Söhne', BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  html, body { height: 100%; font-family: var(--font); background: var(--bg-tertiary); color: var(--text-primary); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+
+  .page { display: flex; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px; min-width: 220px;
+    background: var(--bg-secondary);
+    border-right: 0.5px solid var(--border-light);
+    display: flex; flex-direction: column;
+    height: 100vh; overflow-y: auto; position: sticky; top: 0;
+  }
+
+  .sidebar-top { padding: 18px 16px 14px; border-bottom: 0.5px solid var(--border-light); }
+  .sidebar-logo { display: flex; align-items: center; gap: 9px; }
+  .logo-mark { width: 26px; height: 26px; background: var(--text-primary); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .logo-mark svg { width: 14px; height: 14px; fill: var(--bg-primary); }
+  .logo-name { font-size: 13px; font-weight: 500; }
+
+  .nav-section { padding: 10px 8px 4px; }
+  .nav-label { font-size: 10.5px; color: var(--text-tertiary); padding: 6px 8px 4px; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius-sm); font-size: 13px; color: var(--text-secondary); cursor: pointer; transition: background 0.12s, color 0.12s; }
+  .nav-item:hover { background: var(--bg-primary); color: var(--text-primary); }
+  .nav-item.active { background: var(--bg-primary); color: var(--text-primary); }
+  .nav-item svg { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.55; }
+  .nav-badge { margin-left: auto; font-size: 10.5px; background: var(--bg-tertiary); color: var(--text-tertiary); padding: 1px 6px; border-radius: 10px; font-weight: 500; }
+  .nav-badge.red { background: var(--red-bg); color: var(--red-text); }
+
+  .sidebar-divider { height: 0.5px; background: var(--border-light); margin: 6px 0; }
+
+  /* ── Progress section ── */
+  .progress-section { padding: 8px 8px 12px; }
+
+  .progress-item { padding: 7px 8px; border-radius: var(--radius-sm); margin-bottom: 2px; cursor: pointer; transition: background 0.1s; }
+  .progress-item:hover { background: var(--bg-primary); }
+
+  .progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+  .progress-module { font-size: 12px; color: var(--text-primary); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+  .progress-pct { font-size: 11.5px; font-weight: 500; }
+  .pct-high { color: var(--green-text); }
+  .pct-mid { color: var(--amber-text); }
+  .pct-low { color: var(--red-text); }
+
+  .progress-meta { font-size: 10.5px; color: var(--text-tertiary); margin-bottom: 5px; }
+
+  .progress-bar-track { height: 3px; background: var(--border-light); border-radius: 2px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+  .fill-high { background: var(--green); }
+  .fill-mid { background: var(--amber); }
+  .fill-low { background: var(--red); }
+
+  .sidebar-footer { margin-top: auto; padding: 12px 14px; border-top: 0.5px solid var(--border-light); display: flex; align-items: center; gap: 9px; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--blue-bg); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--blue-text); flex-shrink: 0; }
+  .footer-name { font-size: 12px; font-weight: 500; }
+  .footer-role { font-size: 11px; color: var(--text-tertiary); }
+
+  /* ── Main ── */
+  .main { flex: 1; padding: 36px 40px; max-width: 700px; overflow-y: auto; }
+  .page-header { margin-bottom: 28px; }
+  .greeting-row { display: flex; align-items: center; gap: 10px; margin-bottom: 3px; }
+  .avatar-lg { width: 34px; height: 34px; border-radius: 50%; background: var(--blue-bg); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--blue-text); }
+  h1 { font-size: 20px; font-weight: 500; }
+  .page-sub { font-size: 13px; color: var(--text-tertiary); margin-left: 44px; }
+
+  /* ── Card ── */
+  .card { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
+  .card-label { font-size: 12px; font-weight: 500; margin-bottom: 14px; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+  .field-label { font-size: 11.5px; color: var(--text-secondary); font-weight: 500; }
+
+  .field-input, .field-select { width: 100%; padding: 8px 11px; font-size: 13px; font-family: var(--font); background: var(--bg-secondary); border: 0.5px solid var(--border-light); border-radius: var(--radius-md); color: var(--text-primary); outline: none; transition: border-color 0.12s, background 0.12s; appearance: none; -webkit-appearance: none; }
+  .field-input:focus, .field-select:focus { border-color: var(--border-strong); background: var(--bg-primary); }
+  .field-input::placeholder { color: var(--text-tertiary); }
+  textarea.field-input { min-height: 76px; resize: vertical; line-height: 1.55; }
+
+  .select-wrapper { position: relative; }
+  .select-wrapper::after { content: ''; position: absolute; right: 11px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid var(--text-tertiary); pointer-events: none; }
+  .field-select { cursor: pointer; padding-right: 28px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  #submodule-field { display: none; }
+  #submodule-field.visible { display: flex; }
+
+  .upload-zone { border: 0.5px dashed var(--border-mid); border-radius: var(--radius-md); padding: 18px 16px; text-align: center; cursor: pointer; background: var(--bg-secondary); transition: background 0.12s; }
+  .upload-zone:hover { background: var(--bg-tertiary); border-color: var(--border-strong); }
+  .upload-icon { width: 28px; height: 28px; margin: 0 auto 7px; opacity: 0.25; }
+  .upload-text { font-size: 12.5px; color: var(--text-secondary); }
+  .upload-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+
+  .submit-btn { width: 100%; padding: 9px; font-size: 13px; font-weight: 500; font-family: var(--font); background: var(--text-primary); color: var(--bg-primary); border: none; border-radius: var(--radius-md); cursor: pointer; margin-top: 12px; transition: opacity 0.12s; }
+  .submit-btn:hover { opacity: 0.82; }
+
+  /* ── Bug list ── */
+  .list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .list-title { font-size: 12px; font-weight: 500; }
+  .list-count { font-size: 11px; color: var(--text-tertiary); background: var(--bg-secondary); padding: 2px 8px; border-radius: 10px; }
+
+  .group-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 0.5px solid var(--border-light); }
+  .group-name { font-size: 11.5px; color: var(--text-tertiary); font-weight: 500; }
+  .group-n { font-size: 11px; color: var(--text-tertiary); }
+
+  /* ── Bug row ── */
+  .bug-row { border-bottom: 0.5px solid var(--border-light); }
+  .bug-row:last-child { border-bottom: none; }
+  .bug-row-main { display: flex; align-items: center; gap: 12px; padding: 11px 0; cursor: pointer; }
+
+  .bug-icon { width: 34px; height: 34px; flex-shrink: 0; background: var(--bg-secondary); border: 0.5px solid var(--border-light); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; }
+  .bug-icon svg { width: 15px; height: 15px; stroke: var(--text-tertiary); fill: none; stroke-width: 1.3; }
+
+  .bug-body { flex: 1; min-width: 0; }
+  .bug-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bug-tags { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+
+  .tag { font-size: 11px; padding: 2px 7px; border-radius: 4px; border: 0.5px solid var(--border-light); background: var(--bg-secondary); color: var(--text-secondary); white-space: nowrap; }
+
+  .status { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .s-open .dot { background: var(--red); } .s-open { color: var(--red-text); }
+  .s-fixed .dot { background: var(--blue); } .s-fixed { color: var(--blue-text); }
+  .s-verified .dot { background: var(--green); } .s-verified { color: var(--green-text); }
+  .s-progress .dot { background: var(--amber); } .s-progress { color: var(--amber-text); }
+
+  .bug-time { font-size: 11px; color: var(--text-tertiary); flex-shrink: 0; }
+
+  /* ── Verify panel ── */
+  .verify-panel {
+    margin: 0 0 12px 46px;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    display: none;
+  }
+
+  .verify-panel.open { display: block; }
+
+  .verify-panel-header { padding: 10px 14px; border-bottom: 0.5px solid var(--border-light); display: flex; align-items: center; justify-content: space-between; }
+  .verify-panel-title { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+  .verify-panel-sub { font-size: 11px; color: var(--text-tertiary); }
+
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+
+  .compare-col { padding: 12px 14px; }
+  .compare-col:first-child { border-right: 0.5px solid var(--border-light); }
+  .compare-label { font-size: 10.5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .compare-label.before { color: var(--red-text); }
+  .compare-label.after { color: var(--green-text); }
+
+  .compare-img {
+    width: 100%; aspect-ratio: 16/9;
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+
+  .compare-img svg { width: 24px; height: 24px; stroke: var(--text-tertiary); fill: none; stroke-width: 1.2; opacity: 0.4; }
+  .compare-img img { width: 100%; height: 100%; object-fit: cover; }
+
+  .compare-note { font-size: 11px; color: var(--text-tertiary); margin-top: 6px; }
+
+  .verify-footer { padding: 10px 14px; border-top: 0.5px solid var(--border-light); display: flex; align-items: center; gap: 8px; }
+
+  .verify-btn { padding: 7px 16px; font-size: 12.5px; font-weight: 500; font-family: var(--font); background: var(--green); color: white; border: none; border-radius: var(--radius-md); cursor: pointer; transition: opacity 0.12s; }
+  .verify-btn:hover { opacity: 0.85; }
+
+  .verified-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--green-text); background: var(--green-bg); padding: 5px 12px; border-radius: var(--radius-md); }
+  .verified-badge svg { width: 12px; height: 12px; stroke: var(--green); fill: none; stroke-width: 2; }
+
+  .verify-hint { font-size: 11.5px; color: var(--text-tertiary); }
+
+  /* animate chevron */
+  .chevron { width: 13px; height: 13px; stroke: var(--text-tertiary); fill: none; stroke-width: 1.5; transition: transform 0.2s; flex-shrink: 0; }
+  .bug-row-main.expanded .chevron { transform: rotate(180deg); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-logo">
+        <div class="logo-mark">
+          <svg viewBox="0 0 14 14"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>
+        </div>
+        <span class="logo-name">ERP Feedback</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+        Dashboard
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Reports</div>
+      <div class="nav-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/></svg>
+        Open <span class="nav-badge red">1</span>
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M3 14c0-3 10-3 10 0"/></svg>
+        Needs verify <span class="nav-badge">1</span>
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 8l3 3 7-7"/></svg>
+        Verified <span class="nav-badge">0</span>
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6" stroke-linecap="round"/></svg>
+        All bugs <span class="nav-badge">2</span>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <!-- Module Progress -->
+    <div class="nav-section">
+      <div class="nav-label">Module progress</div>
+    </div>
+    <div class="progress-section">
+
+      <!-- Keuangan — 1 open bug → 98% -->
+      <div class="progress-item">
+        <div class="progress-header">
+          <span class="progress-module">Keuangan</span>
+          <span class="progress-pct pct-high">98%</span>
+        </div>
+        <div class="progress-meta">1 open bug</div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill fill-high" style="width: 98%"></div>
+        </div>
+      </div>
+
+      <!-- Inventori — 0 bugs → 100% -->
+      <div class="progress-item">
+        <div class="progress-header">
+          <span class="progress-module">Inventori</span>
+          <span class="progress-pct pct-high">100%</span>
+        </div>
+        <div class="progress-meta">No open bugs</div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill fill-high" style="width: 100%"></div>
+        </div>
+      </div>
+
+      <!-- Penjualan — 3 open → 95% -->
+      <div class="progress-item">
+        <div class="progress-header">
+          <span class="progress-module">Penjualan</span>
+          <span class="progress-pct pct-mid">95%</span>
+        </div>
+        <div class="progress-meta">3 open bugs</div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill fill-mid" style="width: 95%"></div>
+        </div>
+      </div>
+
+      <!-- Manufaktur — 6 bugs → 90% -->
+      <div class="progress-item">
+        <div class="progress-header">
+          <span class="progress-module">Manufaktur</span>
+          <span class="progress-pct pct-low">90%</span>
+        </div>
+        <div class="progress-meta">6 open bugs · biggest backlog</div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill fill-low" style="width: 90%"></div>
+        </div>
+      </div>
+
+      <!-- Pengadaan — 0 → 100% -->
+      <div class="progress-item">
+        <div class="progress-header">
+          <span class="progress-module">Pengadaan</span>
+          <span class="progress-pct pct-high">100%</span>
+        </div>
+        <div class="progress-meta">No open bugs</div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill fill-high" style="width: 100%"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="avatar">D</div>
+      <div>
+        <div class="footer-name">Darren</div>
+        <div class="footer-role">COO</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="page-header">
+      <div class="greeting-row">
+        <div class="avatar-lg">D</div>
+        <h1>Hey Darren</h1>
+      </div>
+      <p class="page-sub">Report a bug or check the status of your reports.</p>
+    </div>
+
+    <!-- Form -->
+    <div class="card">
+      <div class="card-label">New bug report</div>
+      <div class="field">
+        <label class="field-label">What went wrong?</label>
+        <textarea class="field-input" placeholder="Describe the issue — what happened, what you expected..."></textarea>
+      </div>
+      <div class="two-col">
+        <div class="field">
+          <label class="field-label">Module</label>
+          <div class="select-wrapper">
+            <select class="field-select" id="module-select" onchange="onModuleChange(this.value)">
+              <option value="">Select module...</option>
+              <option value="keuangan">Keuangan</option>
+              <option value="inventori">Inventori</option>
+              <option value="penjualan">Penjualan & CRM</option>
+              <option value="pengadaan">Pengadaan</option>
+              <option value="manufaktur">Manufaktur</option>
+              <option value="sdm">SDM</option>
+              <option value="dokumen">Dokumen</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" id="submodule-field">
+          <label class="field-label">Sub-module</label>
+          <div class="select-wrapper">
+            <select class="field-select" id="submodule-select"><option value="">Select sub-module...</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Category</label>
+        <div class="select-wrapper">
+          <select class="field-select">
+            <option value="">Select category...</option>
+            <option>Button / action not working</option>
+            <option>Missing or wrong data</option>
+            <option>Missing action / feature</option>
+            <option>Form not submitting</option>
+            <option>Validation error</option>
+            <option>UI / display issue</option>
+            <option>Slow / performance issue</option>
+            <option>Page crash / error</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Screenshot</label>
+        <div class="upload-zone">
+          <svg class="upload-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="5" width="22" height="18" rx="3"/><circle cx="19" cy="11" r="2.2"/><path d="M3 20l6-5 4.5 4.5 3.5-3.5L22 20"/></svg>
+          <div class="upload-text">Drop, paste, or click to add screenshot</div>
+          <div class="upload-hint">1 screenshot per report · PNG, JPG</div>
+        </div>
+      </div>
+      <button class="submit-btn">Submit report</button>
+    </div>
+
+    <!-- Bug list -->
+    <div class="card">
+      <div class="list-header">
+        <span class="list-title">Your reports</span>
+        <span class="list-count">2 total</span>
+      </div>
+
+      <div class="group-row">
+        <span class="group-name">Yesterday</span>
+        <span class="group-n">2 reports</span>
+      </div>
+
+      <!-- Bug 1: Fixed — needs verify -->
+      <div class="bug-row">
+        <div class="bug-row-main" onclick="toggleVerify('v1', this)">
+          <div class="bug-icon"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 5.5h6M5 10.5h4" stroke-linecap="round"/></svg></div>
+          <div class="bug-body">
+            <div class="bug-title">Finance button gakerja</div>
+            <div class="bug-tags">
+              <span class="tag">Keuangan</span>
+              <span class="tag">Chart of Accounts</span>
+              <span class="tag">Button / action not working</span>
+              <span class="status s-fixed"><span class="dot"></span>Fixed — tap to verify</span>
+            </div>
+          </div>
+          <div class="bug-time">13h ago</div>
+          <svg class="chevron" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <!-- Verify panel -->
+        <div class="verify-panel open" id="v1">
+          <div class="verify-panel-header">
+            <span class="verify-panel-title">Verify this fix</span>
+            <span class="verify-panel-sub">Compare before & after, then confirm</span>
+          </div>
+          <div class="compare-grid">
+            <div class="compare-col">
+              <div class="compare-label before">Before (your screenshot)</div>
+              <div class="compare-img">
+                <svg viewBox="0 0 28 28"><rect x="3" y="5" width="22" height="18" rx="2"/><path d="M3 18l6-5 4 4 3-3 6 5"/><circle cx="19" cy="10" r="2"/></svg>
+              </div>
+              <div class="compare-note">Submitted by you · 13h ago</div>
+            </div>
+            <div class="compare-col">
+              <div class="compare-label after">After (fixer screenshot)</div>
+              <div class="compare-img">
+                <svg viewBox="0 0 28 28"><rect x="3" y="5" width="22" height="18" rx="2"/><path d="M3 18l6-5 4 4 3-3 6 5"/><circle cx="19" cy="10" r="2"/></svg>
+              </div>
+              <div class="compare-note">Uploaded by Richie · 2h ago</div>
+            </div>
+          </div>
+          <div class="verify-footer">
+            <button class="verify-btn" onclick="markVerified('v1', this)">✓ Mark as verified</button>
+            <span class="verify-hint">Confirms the bug is resolved on your end</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bug 2: Open (no verify panel) -->
+      <div class="bug-row">
+        <div class="bug-row-main">
+          <div class="bug-icon"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 5.5h6M5 10.5h4" stroke-linecap="round"/></svg></div>
+          <div class="bug-body">
+            <div class="bug-title">Gabisa coba coba</div>
+            <div class="bug-tags">
+              <span class="tag">Keuangan</span>
+              <span class="tag">Invoicing</span>
+              <span class="tag">Missing or wrong data</span>
+              <span class="status s-open"><span class="dot"></span>Open</span>
+            </div>
+          </div>
+          <div class="bug-time">16h ago</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+const SUBMODULES = {
+  keuangan: [
+    { group: 'Transaksi', items: ['Invoicing', 'Piutang Usaha (AR)', 'Hutang Usaha (AP)', 'Nota Kredit/Debit', 'Peti Kas'] },
+    { group: 'Akuntansi', items: ['Jurnal Umum', 'Transaksi Akun', 'Rekonsiliasi Bank', 'Chart of Accounts'] },
+    { group: 'Laporan & Setup', items: ['Laporan Keuangan', 'Perencanaan Arus Kas', 'Saldo Awal', 'Kurs Mata Uang', 'Periode Fiskal'] },
+    { group: 'Aset Tetap', items: ['Aset Tetap'] },
+  ],
+  inventori: [
+    { group: 'Umum', items: ['Dashboard Inventori', 'Kelola Produk', 'Kategori Produk'] },
+    { group: 'Stok', items: ['Level Stok', 'Pergerakan Stok', 'Transfer Stok', 'Gudang & Lokasi', 'Fabric Rolls'] },
+    { group: 'Kontrol', items: ['Stok Opname', 'Opname Batch', 'Peringatan Stok', 'Laporan Inventori'] },
+    { group: 'Pengaturan', items: ['Saldo Awal Stok', 'Pengaturan Inventori'] },
+  ],
+  penjualan: [
+    { group: 'Umum', items: ['Dashboard Sales', 'Kelola Pelanggan', 'Penawaran', 'Pesanan Penjualan', 'Penjualan', 'Lead & Pipeline', 'Point of Sale (POS)'] },
+    { group: 'Harga & Komisi', items: ['Daftar Harga', 'Skema Diskon', 'Salesperson & Komisi'] },
+  ],
+  pengadaan: [
+    { group: 'Umum', items: ['Dashboard Pengadaan', 'Pemasok (Vendor)', 'Pesanan Pembelian', 'Permintaan Pembelian', 'Surat Jalan Masuk'] },
+  ],
+  manufaktur: [
+    { group: 'Perencanaan', items: ['Bill of Materials (BoM)', 'Kebutuhan Material', 'Perencanaan (MPS)', 'Daftar Cost Sheet'] },
+    { group: 'Produksi', items: ['Work Center', 'Grup Mesin', 'Proses', 'Routing', 'Perintah Kerja (SPK)', 'Jadwal Produksi', 'Daftar Cut Plan'] },
+    { group: 'Kualitas & Mitra', items: ['Kontrol Kualitas (QC)', 'Order Subkontrak', 'Registri Mitra CMT'] },
+  ],
+  sdm: [{ group: 'SDM', items: ['Data Karyawan', 'Penggajian', 'Absensi', 'Jadwal Shift', 'Onboarding'] }],
+  dokumen: [{ group: 'Dokumen', items: ['Upload Dokumen', 'Template', 'Approval Dokumen'] }],
+};
+
+function onModuleChange(val) {
+  const field = document.getElementById('submodule-field');
+  const select = document.getElementById('submodule-select');
+  if (!val || !SUBMODULES[val]) { field.classList.remove('visible'); return; }
+  let html = '<option value="">Select sub-module...</option>';
+  SUBMODULES[val].forEach(({ group, items }) => {
+    html += `<optgroup label="${group}">${items.map(i => `<option>${i}</option>`).join('')}</optgroup>`;
+  });
+  select.innerHTML = html;
+  field.classList.add('visible');
+}
+
+function toggleVerify(id, btn) {
+  const panel = document.getElementById(id);
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  btn.classList.toggle('expanded', !isOpen);
+}
+
+function markVerified(id, btn) {
+  const panel = document.getElementById(id);
+  const footer = panel.querySelector('.verify-footer');
+  const statusEl = panel.closest('.bug-row').querySelector('.status');
+  footer.innerHTML = '<span class="verified-badge"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>Verified by you</span><span class="verify-hint" style="margin-left:8px">Thank you for confirming</span>';
+  statusEl.className = 'status s-verified';
+  statusEl.innerHTML = '<span class="dot"></span>Verified';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bug Tracker — Fixer View</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f4f0;
+    --bg-tertiary: #f0efe9;
+    --text-primary: #1a1a18;
+    --text-secondary: #5a5a56;
+    --text-tertiary: #9a9a94;
+    --border-light: rgba(0,0,0,0.08);
+    --border-mid: rgba(0,0,0,0.14);
+    --border-strong: rgba(0,0,0,0.22);
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --red: #E24B4A; --red-bg: #FCEBEB; --red-text: #A32D2D;
+    --amber: #EF9F27; --amber-bg: #FAEEDA; --amber-text: #854F0B;
+    --blue: #378ADD; --blue-bg: #E6F1FB; --blue-text: #185FA5;
+    --green: #1D9E75; --green-bg: #E1F5EE; --green-text: #0F6E56;
+    --purple-bg: #EEEDFE; --purple-text: #3C3489;
+    --font: -apple-system, 'Söhne', 'Inter', BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  html, body { height: 100%; font-family: var(--font); background: var(--bg-tertiary); color: var(--text-primary); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; overflow: hidden; }
+
+  .layout { display: flex; height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 210px; min-width: 210px;
+    background: var(--bg-secondary);
+    border-right: 0.5px solid var(--border-light);
+    display: flex; flex-direction: column;
+    height: 100vh; overflow-y: auto;
+  }
+
+  .sidebar-top {
+    padding: 18px 16px 14px;
+    border-bottom: 0.5px solid var(--border-light);
+  }
+
+  .sidebar-logo { display: flex; align-items: center; gap: 9px; }
+
+  .logo-mark {
+    width: 26px; height: 26px;
+    background: var(--text-primary);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .logo-mark svg { width: 14px; height: 14px; fill: var(--bg-primary); }
+  .logo-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+
+  .sidebar-section { padding: 12px 8px 4px; }
+
+  .sidebar-label {
+    font-size: 10.5px; color: var(--text-tertiary);
+    padding: 4px 8px 6px;
+    text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500;
+  }
+
+  .status-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 6px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 13px; color: var(--text-secondary);
+    cursor: pointer; user-select: none;
+    transition: background 0.1s, color 0.1s;
+  }
+
+  .status-item:hover { background: var(--bg-primary); color: var(--text-primary); }
+  .status-item.active { background: var(--bg-primary); color: var(--text-primary); }
+
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dot-open { background: var(--red); }
+  .dot-progress { background: var(--amber); }
+  .dot-fixed { background: var(--blue); }
+  .dot-verified { background: var(--green); }
+
+  .status-count {
+    margin-left: auto;
+    font-size: 11px; font-weight: 500;
+    color: var(--text-tertiary);
+  }
+
+  .divider { height: 0.5px; background: var(--border-light); margin: 8px 0; }
+
+  .search-wrap { padding: 8px; }
+
+  .search-input {
+    width: 100%;
+    padding: 7px 10px 7px 30px;
+    font-size: 12.5px; font-family: var(--font);
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.12s;
+    position: relative;
+  }
+
+  .search-input:focus { border-color: var(--border-strong); }
+  .search-input::placeholder { color: var(--text-tertiary); }
+
+  .search-wrap-inner { position: relative; }
+
+  .search-icon {
+    position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+    width: 13px; height: 13px; stroke: var(--text-tertiary); fill: none; stroke-width: 1.5;
+    pointer-events: none;
+  }
+
+  .filter-section { padding: 0 8px 8px; }
+
+  .select-wrapper { position: relative; margin-bottom: 10px; }
+
+  .select-wrapper::after {
+    content: '';
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    width: 0; height: 0;
+    border-left: 4px solid transparent; border-right: 4px solid transparent;
+    border-top: 4px solid var(--text-tertiary);
+    pointer-events: none;
+  }
+
+  .filter-select {
+    width: 100%; padding: 7px 28px 7px 10px;
+    font-size: 12.5px; font-family: var(--font);
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    outline: none; cursor: pointer;
+    appearance: none; -webkit-appearance: none;
+  }
+
+  .chip-group { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 4px; }
+
+  .chip {
+    font-size: 11.5px; padding: 3px 10px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border-light);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    cursor: pointer; user-select: none;
+    transition: background 0.1s, color 0.1s, border-color 0.1s;
+  }
+
+  .chip:hover { border-color: var(--border-mid); color: var(--text-primary); }
+  .chip.active { background: var(--text-primary); color: var(--bg-primary); border-color: var(--text-primary); }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px 14px;
+    border-top: 0.5px solid var(--border-light);
+    display: flex; align-items: center; gap: 9px;
+  }
+
+  .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; flex-shrink: 0;
+    background: var(--purple-bg); color: var(--purple-text);
+  }
+
+  .footer-name { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+  .footer-role { font-size: 11px; color: var(--text-tertiary); }
+
+  /* ── Main ── */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+
+  .topbar {
+    padding: 14px 24px;
+    border-bottom: 0.5px solid var(--border-light);
+    background: var(--bg-secondary);
+    display: flex; align-items: center; gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .topbar-title { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+
+  .topbar-sub { font-size: 12px; color: var(--text-tertiary); margin-left: 2px; }
+
+  .view-toggle {
+    margin-left: auto;
+    display: flex; gap: 2px;
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 3px;
+  }
+
+  .view-btn {
+    padding: 4px 10px;
+    font-size: 12px; font-family: var(--font);
+    border: none; background: none; cursor: pointer;
+    border-radius: 6px; color: var(--text-tertiary);
+    transition: background 0.1s, color 0.1s;
+  }
+
+  .view-btn.active { background: var(--bg-secondary); color: var(--text-primary); }
+
+  /* ── Kanban ── */
+  .kanban { display: flex; gap: 12px; padding: 20px 24px; overflow-x: auto; flex: 1; align-items: flex-start; }
+
+  .column {
+    min-width: 280px; width: 280px; flex-shrink: 0;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  .col-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 2px;
+    border-bottom: 0.5px solid var(--border-light);
+    margin-bottom: 2px;
+  }
+
+  .col-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+  .col-title { font-size: 12.5px; font-weight: 500; color: var(--text-primary); }
+
+  .col-count {
+    margin-left: auto;
+    font-size: 11px; color: var(--text-tertiary);
+    background: var(--bg-secondary);
+    padding: 1px 7px; border-radius: 10px;
+  }
+
+  /* ── Bug Card ── */
+  .bug-card {
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color 0.12s;
+  }
+
+  .bug-card:hover { border-color: var(--border-mid); }
+
+  .card-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .card-id { font-size: 11px; color: var(--text-tertiary); font-weight: 500; letter-spacing: 0.03em; }
+  .card-time { font-size: 11px; color: var(--text-tertiary); }
+
+  .card-title { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 10px; line-height: 1.4; }
+
+  .card-footer { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+  .tag {
+    font-size: 11px; padding: 2px 8px;
+    border-radius: 4px;
+    border: 0.5px solid var(--border-light);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .tag-category {
+    font-size: 11px; padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .tag-button   { background: var(--red-bg); color: var(--red-text); }
+  .tag-data     { background: var(--amber-bg); color: var(--amber-text); }
+  .tag-feature  { background: var(--blue-bg); color: var(--blue-text); }
+  .tag-ui       { background: var(--purple-bg); color: var(--purple-text); }
+
+  .reporter-chip {
+    margin-left: auto;
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600; flex-shrink: 0;
+  }
+
+  .chip-d { background: var(--blue-bg); color: var(--blue-text); }
+  .chip-r { background: var(--green-bg); color: var(--green-text); }
+  .chip-ra { background: var(--purple-bg); color: var(--purple-text); }
+
+  .empty-col {
+    padding: 24px 0;
+    text-align: center;
+    font-size: 12px; color: var(--text-tertiary);
+    border: 0.5px dashed var(--border-light);
+    border-radius: var(--radius-lg);
+  }
+
+  /* screenshot thumb */
+  .card-thumb {
+    width: 100%; height: 60px;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+
+  .card-thumb svg { width: 18px; height: 18px; stroke: var(--text-tertiary); fill: none; stroke-width: 1.2; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-logo">
+        <div class="logo-mark">
+          <svg viewBox="0 0 14 14"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>
+        </div>
+        <span class="logo-name">Bug Tracker</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Status</div>
+      <div class="status-item active" onclick="setStatus(this)">
+        <span class="status-dot dot-open"></span> Open
+        <span class="status-count">1</span>
+      </div>
+      <div class="status-item" onclick="setStatus(this)">
+        <span class="status-dot dot-progress"></span> In Progress
+        <span class="status-count">0</span>
+      </div>
+      <div class="status-item" onclick="setStatus(this)">
+        <span class="status-dot dot-fixed"></span> Fixed
+        <span class="status-count">1</span>
+      </div>
+      <div class="status-item" onclick="setStatus(this)">
+        <span class="status-dot dot-verified"></span> Verified
+        <span class="status-count">0</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="search-wrap">
+      <div class="search-wrap-inner">
+        <svg class="search-icon" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4"/><path d="M10 10l3 3" stroke-linecap="round"/></svg>
+        <input class="search-input" type="text" placeholder="Search bugs..." />
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <div class="select-wrapper">
+        <select class="filter-select">
+          <option>All modules</option>
+          <option>Finance</option>
+          <option>Inventory</option>
+          <option>Sales</option>
+          <option>Procurement</option>
+          <option>HCM</option>
+        </select>
+      </div>
+
+      <div class="sidebar-label" style="padding: 0 0 6px; font-size: 10.5px;">Reporter</div>
+      <div class="chip-group" style="margin-bottom: 12px;">
+        <div class="chip active" onclick="toggleChip(this, 'reporter')">All</div>
+        <div class="chip" onclick="toggleChip(this, 'reporter')">Richie</div>
+        <div class="chip" onclick="toggleChip(this, 'reporter')">Darren</div>
+        <div class="chip" onclick="toggleChip(this, 'reporter')">Raymond</div>
+      </div>
+
+      <div class="sidebar-label" style="padding: 0 0 6px; font-size: 10.5px;">Category</div>
+      <div class="chip-group">
+        <div class="chip active" onclick="toggleChip(this, 'category')">All</div>
+        <div class="chip" onclick="toggleChip(this, 'category')">Button</div>
+        <div class="chip" onclick="toggleChip(this, 'category')">Data</div>
+        <div class="chip" onclick="toggleChip(this, 'category')">Feature</div>
+        <div class="chip" onclick="toggleChip(this, 'category')">UI</div>
+        <div class="chip" onclick="toggleChip(this, 'category')">Form</div>
+        <div class="chip" onclick="toggleChip(this, 'category')">Crash</div>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="avatar" style="background: var(--purple-bg); color: var(--purple-text);">R</div>
+      <div>
+        <div class="footer-name">Richie</div>
+        <div class="footer-role">CTO — Fixer View</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title">Bug Tracker</span>
+      <span class="topbar-sub">— Fixer View</span>
+      <div class="view-toggle">
+        <button class="view-btn active">Board</button>
+        <button class="view-btn">List</button>
+      </div>
+    </div>
+
+    <div class="kanban">
+
+      <!-- Open -->
+      <div class="column">
+        <div class="col-header">
+          <span class="col-dot dot-open"></span>
+          <span class="col-title">Open</span>
+          <span class="col-count">1</span>
+        </div>
+
+        <div class="bug-card">
+          <div class="card-top">
+            <span class="card-id">ERP-001</span>
+            <span class="card-time">16h ago</span>
+          </div>
+          <div class="card-thumb">
+            <svg viewBox="0 0 20 20"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M2 13l4-4 4 4 3-3 5 4" stroke-linecap="round"/><circle cx="14" cy="8" r="1.5" fill="currentColor" stroke="none" style="fill: var(--text-tertiary)"/></svg>
+          </div>
+          <div class="card-title">Gabisa coba coba</div>
+          <div class="card-footer">
+            <span class="tag">Finance</span>
+            <span class="tag">Invoice</span>
+            <span class="tag-category tag-data">Missing data</span>
+            <span class="reporter-chip chip-d">D</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- In Progress -->
+      <div class="column">
+        <div class="col-header">
+          <span class="col-dot dot-progress"></span>
+          <span class="col-title">In progress</span>
+          <span class="col-count">0</span>
+        </div>
+        <div class="empty-col">No bugs with this status</div>
+      </div>
+
+      <!-- Fixed -->
+      <div class="column">
+        <div class="col-header">
+          <span class="col-dot dot-fixed"></span>
+          <span class="col-title">Fixed</span>
+          <span class="col-count">1</span>
+        </div>
+
+        <div class="bug-card">
+          <div class="card-top">
+            <span class="card-id">ERP-002</span>
+            <span class="card-time">14h ago</span>
+          </div>
+          <div class="card-thumb">
+            <svg viewBox="0 0 20 20"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M2 13l4-4 4 4 3-3 5 4" stroke-linecap="round"/></svg>
+          </div>
+          <div class="card-title">Finance button gakerja</div>
+          <div class="card-footer">
+            <span class="tag">Finance</span>
+            <span class="tag">COA</span>
+            <span class="tag-category tag-button">Button broken</span>
+            <span class="reporter-chip chip-d">D</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Verified -->
+      <div class="column">
+        <div class="col-header">
+          <span class="col-dot dot-verified"></span>
+          <span class="col-title">Verified</span>
+          <span class="col-count">0</span>
+        </div>
+        <div class="empty-col">No bugs with this status</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  function setStatus(el) {
+    document.querySelectorAll('.status-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function toggleChip(el, group) {
+    const parent = el.closest('.chip-group');
+    const chips = parent.querySelectorAll('.chip');
+    if (el.textContent === 'All') {
+      chips.forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+    } else {
+      parent.querySelector('.chip').classList.remove('active');
+      el.classList.toggle('active');
+      const anyActive = Array.from(chips).slice(1).some(c => c.classList.contains('active'));
+      if (!anyActive) parent.querySelector('.chip').classList.add('active');
+    }
+  }
+</script>
+</body>
+</html>

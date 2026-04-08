@@ -1,7 +1,7 @@
 {
   "rewrites": [
-    { "source": "/report", "destination": "/report/index.html" },
-    { "source": "/fix", "destination": "/fix/index.html" },
-    { "source": "/", "destination": "/report/index.html" }
+    { "source": "/reporter", "destination": "/reporter/index.html" },
+    { "source": "/fixer", "destination": "/fixer/index.html" },
+    { "source": "/", "destination": "/reporter/index.html" }
   ]
 }

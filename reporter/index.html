@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ERP Feedback — Reporter</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f4f0;
+    --bg-tertiary: #f0efe9;
+    --text-primary: #1a1a18;
+    --text-secondary: #5a5a56;
+    --text-tertiary: #9a9a94;
+    --border-light: rgba(0,0,0,0.08);
+    --border-mid: rgba(0,0,0,0.14);
+    --border-strong: rgba(0,0,0,0.22);
+    --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px;
+    --green: #1D9E75; --green-bg: #E1F5EE; --green-text: #0F6E56;
+    --red: #E24B4A; --red-bg: #FCEBEB; --red-text: #A32D2D;
+    --amber: #EF9F27; --amber-bg: #FAEEDA; --amber-text: #854F0B;
+    --blue: #378ADD; --blue-bg: #E6F1FB; --blue-text: #185FA5;
+    --purple-bg: #EEEDFE; --purple-text: #3C3489;
+    --font: -apple-system, 'Söhne', BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  html, body { height: 100%; font-family: var(--font); background: var(--bg-tertiary); color: var(--text-primary); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+
+  /* ── Login Screen ── */
+  .identity-picker {
+    position: fixed; inset: 0;
+    background: var(--bg-primary);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 5000; transition: opacity 0.3s ease;
+  }
+  .identity-picker.hidden { opacity: 0; pointer-events: none; }
+
+  .login-form {
+    width: 100%; max-width: 340px; padding: 0 24px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .login-logo {
+    width: 40px; height: 40px; background: var(--text-primary);
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+  }
+  .login-logo svg { width: 20px; height: 20px; fill: var(--bg-primary); }
+  .login-form h1 { font-size: 22px; font-weight: 600; margin-bottom: 5px; text-align: center; }
+  .login-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 28px; text-align: center; }
+
+  .login-select {
+    width: 100%; height: 42px;
+    border: 0.5px solid var(--border-mid);
+    border-radius: var(--radius-md);
+    font-size: 14px; font-family: var(--font);
+    color: var(--text-primary); background: var(--bg-primary);
+    padding: 0 32px 0 14px; outline: none;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%239a9a94' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+    cursor: pointer; transition: border-color 0.12s;
+  }
+  .login-select.placeholder { color: var(--text-tertiary); }
+  .login-select:focus { border-color: var(--border-strong); }
+
+  .login-btn {
+    width: 100%; height: 42px; margin-top: 10px;
+    background: var(--text-primary); color: var(--bg-primary);
+    border: none; border-radius: var(--radius-md);
+    font-size: 14px; font-weight: 500; font-family: var(--font);
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  .login-btn:hover:not(:disabled) { opacity: 0.85; }
+  .login-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* ── Offline Banner ── */
+  .offline-banner {
+    position: fixed; top: 0; left: 0; right: 0;
+    background: var(--text-primary); color: var(--bg-primary);
+    font-size: 12px; text-align: center; padding: 8px;
+    transform: translateY(-100%); transition: transform 0.3s ease; z-index: 4000;
+  }
+  .offline-banner.show { transform: translateY(0); }
+
+  /* ── Lightbox ── */
+  .lightbox {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center; z-index: 3000;
+    cursor: zoom-out;
+  }
+  .lightbox.show { display: flex; }
+  .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; object-fit: contain; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 20px; left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: var(--text-primary); color: var(--bg-primary);
+    padding: 8px 16px; border-radius: var(--radius-md);
+    font-size: 12.5px; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s; z-index: 2000; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--red); }
+
+  /* ── Page Layout ── */
+  .page { display: flex; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px; min-width: 220px;
+    background: var(--bg-secondary);
+    border-right: 0.5px solid var(--border-light);
+    display: flex; flex-direction: column;
+    height: 100vh; overflow-y: auto; position: sticky; top: 0;
+  }
+
+  .sidebar-top { padding: 18px 16px 14px; border-bottom: 0.5px solid var(--border-light); }
+  .sidebar-logo { display: flex; align-items: center; gap: 9px; }
+  .logo-mark { width: 26px; height: 26px; background: var(--text-primary); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .logo-mark svg { width: 14px; height: 14px; fill: var(--bg-primary); }
+  .logo-name { font-size: 13px; font-weight: 500; }
+
+  .nav-section { padding: 10px 8px 4px; }
+  .nav-label { font-size: 10.5px; color: var(--text-tertiary); padding: 6px 8px 4px; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius-sm); font-size: 13px; color: var(--text-secondary); cursor: pointer; transition: background 0.12s, color 0.12s; user-select: none; text-decoration: none; }
+  .nav-item:hover { background: var(--bg-primary); color: var(--text-primary); }
+  .nav-item.active { background: var(--bg-primary); color: var(--text-primary); }
+  .nav-item svg { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.55; }
+  .nav-badge { margin-left: auto; font-size: 10.5px; background: var(--bg-tertiary); color: var(--text-tertiary); padding: 1px 6px; border-radius: 10px; font-weight: 500; }
+  .nav-badge.red { background: var(--red-bg); color: var(--red-text); }
+
+  .sidebar-divider { height: 0.5px; background: var(--border-light); margin: 6px 0; }
+
+  /* ── Progress section ── */
+  .progress-section { padding: 8px 8px 12px; }
+
+  .progress-item { padding: 7px 8px; border-radius: var(--radius-sm); margin-bottom: 2px; cursor: pointer; transition: background 0.1s; }
+  .progress-item:hover { background: var(--bg-primary); }
+
+  .progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+  .progress-module { font-size: 12px; color: var(--text-primary); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+  .progress-pct { font-size: 11.5px; font-weight: 500; }
+  .pct-high { color: var(--green-text); }
+  .pct-mid { color: var(--amber-text); }
+  .pct-low { color: var(--red-text); }
+
+  .progress-meta { font-size: 10.5px; color: var(--text-tertiary); margin-bottom: 5px; }
+
+  .progress-bar-track { height: 3px; background: var(--border-light); border-radius: 2px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+  .fill-high { background: var(--green); }
+  .fill-mid { background: var(--amber); }
+  .fill-low { background: var(--red); }
+
+  .sidebar-footer { margin-top: auto; padding: 12px 14px; border-top: 0.5px solid var(--border-light); display: flex; align-items: center; gap: 9px; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--blue-bg); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--blue-text); flex-shrink: 0; }
+  .footer-name { font-size: 12px; font-weight: 500; }
+  .footer-role { font-size: 11px; color: var(--text-tertiary); }
+
+  /* ── Main ── */
+  .main { flex: 1; padding: 36px 40px; max-width: 700px; overflow-y: auto; }
+  .page-header { margin-bottom: 28px; }
+  .greeting-row { display: flex; align-items: center; gap: 10px; margin-bottom: 3px; }
+  .avatar-lg { width: 34px; height: 34px; border-radius: 50%; background: var(--blue-bg); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--blue-text); }
+  h1 { font-size: 20px; font-weight: 500; }
+  .page-sub { font-size: 13px; color: var(--text-tertiary); margin-left: 44px; }
+
+  /* ── Card ── */
+  .card { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
+  .card-label { font-size: 12px; font-weight: 500; margin-bottom: 14px; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+  .field-label { font-size: 11.5px; color: var(--text-secondary); font-weight: 500; }
+
+  .field-input, .field-select { width: 100%; padding: 8px 11px; font-size: 13px; font-family: var(--font); background: var(--bg-secondary); border: 0.5px solid var(--border-light); border-radius: var(--radius-md); color: var(--text-primary); outline: none; transition: border-color 0.12s, background 0.12s; appearance: none; -webkit-appearance: none; }
+  .field-input:focus, .field-select:focus { border-color: var(--border-strong); background: var(--bg-primary); }
+  .field-input::placeholder { color: var(--text-tertiary); }
+  textarea.field-input { min-height: 76px; resize: vertical; line-height: 1.55; }
+
+  .select-wrapper { position: relative; }
+  .select-wrapper::after { content: ''; position: absolute; right: 11px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid var(--text-tertiary); pointer-events: none; }
+  .field-select { cursor: pointer; padding-right: 28px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  #submodule-field { display: none; }
+
+  /* ── Upload Zone ── */
+  .upload-zone {
+    border: 0.5px dashed var(--border-mid); border-radius: var(--radius-md);
+    padding: 18px 16px; text-align: center; cursor: pointer; position: relative;
+    transition: background 0.12s, border-color 0.12s;
+    background: var(--bg-secondary); overflow: hidden;
+  }
+  .upload-zone:hover, .upload-zone.dragover { background: var(--bg-tertiary); border-color: var(--border-strong); }
+  .upload-zone.has-image { padding: 0; height: 120px; border-style: solid; cursor: default; }
+  .upload-icon { width: 28px; height: 28px; margin: 0 auto 7px; opacity: 0.25; }
+  .upload-text { font-size: 12.5px; color: var(--text-secondary); }
+  .upload-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+  .preview-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+  .upload-remove {
+    display: none; position: absolute; top: 6px; right: 6px;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: rgba(0,0,0,0.5); color: #fff; border: none;
+    cursor: pointer; align-items: center; justify-content: center;
+    font-size: 14px; line-height: 1; z-index: 2;
+  }
+  .upload-zone.has-image .upload-remove { display: flex; }
+  .upload-zone.has-image .preview-img { display: block; }
+  .upload-zone.has-image .upload-content { display: none; }
+
+  /* ── Submit Button ── */
+  .submit-btn {
+    width: 100%; padding: 9px;
+    font-size: 13px; font-weight: 500; font-family: var(--font);
+    background: var(--text-primary); color: var(--bg-primary);
+    border: none; border-radius: var(--radius-md);
+    cursor: pointer; margin-top: 12px; transition: opacity 0.12s;
+  }
+  .submit-btn:hover:not(:disabled) { opacity: 0.82; }
+  .submit-btn:active:not(:disabled) { opacity: 0.7; }
+  .submit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* ── Bug list ── */
+  .list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .list-title { font-size: 12px; font-weight: 500; }
+  .list-count { font-size: 11px; color: var(--text-tertiary); background: var(--bg-secondary); padding: 2px 8px; border-radius: 10px; }
+
+  /* ── Date Groups ── */
+  .group-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 0.5px solid var(--border-light); cursor: pointer; user-select: none; }
+  .group-name { font-size: 11.5px; color: var(--text-tertiary); font-weight: 500; }
+  .group-n { font-size: 11px; color: var(--text-tertiary); }
+  .group-body { overflow: hidden; transition: max-height 0.25s ease; max-height: 5000px; }
+  .group-body.collapsed { max-height: 0; }
+
+  /* ── Bug Row ── */
+  .bug-row { border-bottom: 0.5px solid var(--border-light); }
+  .bug-row:last-child { border-bottom: none; }
+  .bug-row-main { display: flex; align-items: center; gap: 12px; padding: 11px 0; cursor: pointer; }
+
+  .bug-icon { width: 34px; height: 34px; flex-shrink: 0; background: var(--bg-secondary); border: 0.5px solid var(--border-light); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; }
+  .bug-icon svg { width: 15px; height: 15px; stroke: var(--text-tertiary); fill: none; stroke-width: 1.3; }
+
+  .bug-body { flex: 1; min-width: 0; }
+  .bug-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bug-tags { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+
+  .tag { font-size: 11px; padding: 2px 7px; border-radius: 4px; border: 0.5px solid var(--border-light); background: var(--bg-secondary); color: var(--text-secondary); white-space: nowrap; }
+
+  .status-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; white-space: nowrap; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .s-open .dot        { background: var(--red); }
+  .s-open             { color: var(--red-text); }
+  .s-in-progress .dot { background: var(--amber); }
+  .s-in-progress      { color: var(--amber-text); }
+  .s-fixed .dot       { background: var(--blue); }
+  .s-fixed            { color: var(--blue-text); }
+  .s-verified .dot    { background: var(--green); }
+  .s-verified         { color: var(--green-text); }
+  .s-closed .dot      { background: var(--text-tertiary); }
+  .s-closed           { color: var(--text-tertiary); }
+
+  .bug-time { font-size: 11px; color: var(--text-tertiary); flex-shrink: 0; }
+
+  /* animate chevron */
+  .chevron { width: 13px; height: 13px; stroke: var(--text-tertiary); fill: none; stroke-width: 1.5; transition: transform 0.2s; flex-shrink: 0; }
+  .bug-row-main.expanded .chevron { transform: rotate(180deg); }
+
+  /* ── Bug Expand (non-Fixed) ── */
+  .bug-expand {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.25s ease; padding-left: 46px;
+  }
+  .bug-expand.open { max-height: 400px; }
+  .expand-inner { padding-bottom: 12px; }
+  .expand-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); margin-bottom: 4px; }
+  .expand-notes { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
+  .expand-notes.empty { font-style: italic; color: var(--text-tertiary); }
+  .expand-screenshot { width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; cursor: zoom-in; display: block; margin-bottom: 10px; border: 0.5px solid var(--border-light); }
+
+  /* ── Verify panel ── */
+  .verify-panel {
+    margin: 0 0 12px 46px;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    display: none;
+  }
+  .verify-panel.open { display: block; }
+
+  .verify-panel-header { padding: 10px 14px; border-bottom: 0.5px solid var(--border-light); display: flex; align-items: center; justify-content: space-between; }
+  .verify-panel-title { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+  .verify-panel-sub { font-size: 11px; color: var(--text-tertiary); }
+
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+
+  .compare-col { padding: 12px 14px; }
+  .compare-col:first-child { border-right: 0.5px solid var(--border-light); }
+  .compare-label { font-size: 10.5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .compare-label.before { color: var(--red-text); }
+  .compare-label.after { color: var(--green-text); }
+
+  .compare-img {
+    width: 100%; aspect-ratio: 16/9;
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .compare-img svg { width: 24px; height: 24px; stroke: var(--text-tertiary); fill: none; stroke-width: 1.2; opacity: 0.4; }
+  .compare-img img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
+
+  .compare-note { font-size: 11px; color: var(--text-tertiary); margin-top: 6px; }
+
+  .fix-notes-section { padding: 10px 14px; border-top: 0.5px solid var(--border-light); }
+  .fix-notes-label { font-size: 10.5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); margin-bottom: 4px; }
+  .fix-notes-text { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+
+  .verify-footer { padding: 10px 14px; border-top: 0.5px solid var(--border-light); display: flex; align-items: center; gap: 8px; }
+
+  .verify-btn { padding: 7px 16px; font-size: 12.5px; font-weight: 500; font-family: var(--font); background: var(--green); color: white; border: none; border-radius: var(--radius-md); cursor: pointer; transition: opacity 0.12s; }
+  .verify-btn:hover { opacity: 0.85; }
+  .verify-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .verified-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--green-text); background: var(--green-bg); padding: 5px 12px; border-radius: var(--radius-md); }
+  .verified-badge svg { width: 12px; height: 12px; stroke: var(--green); fill: none; stroke-width: 2; }
+
+  .verify-hint { font-size: 11.5px; color: var(--text-tertiary); }
+
+  /* ── Empty State ── */
+  .empty-state { text-align: center; padding: 36px 20px; }
+  .empty-state svg { margin: 0 auto 12px; display: block; color: var(--text-tertiary); }
+  .empty-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 3px; }
+  .empty-desc { font-size: 12px; color: var(--text-tertiary); }
+
+  /* ── New row animation ── */
+  @keyframes rowIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .bug-row.new-row { animation: rowIn 0.2s ease forwards; }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .sidebar { display: none; }
+    .main { padding: 20px 16px; max-width: none; }
+    .two-col { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div class="identity-picker" id="identity-picker">
+  <div class="login-form">
+    <div class="login-logo">
+      <svg viewBox="0 0 20 20"><rect x="1" y="1" width="8" height="8" rx="1.5"/><rect x="11" y="1" width="8" height="8" rx="1.5"/><rect x="1" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/></svg>
+    </div>
+    <h1>ERP Feedback</h1>
+    <p class="login-sub">Sign in to continue</p>
+    <select class="login-select placeholder" id="login-select">
+      <option value="" disabled selected>Your name</option>
+    </select>
+    <button class="login-btn" id="login-btn" disabled>Continue</button>
+  </div>
+</div>
+
+<!-- Offline Banner -->
+<div class="offline-banner" id="offline-banner">Offline — changes will sync when reconnected</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <img id="lightbox-img" src="" alt="Screenshot">
+</div>
+
+<!-- Main App (hidden until login) -->
+<div class="page" id="main-view" style="display:none">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-logo">
+        <div class="logo-mark">
+          <svg viewBox="0 0 14 14"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>
+        </div>
+        <span class="logo-name">ERP Feedback</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+        Dashboard
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Reports</div>
+      <div class="nav-item" data-view="open">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/></svg>
+        Open
+        <span class="nav-badge red" id="badge-open">0</span>
+      </div>
+      <div class="nav-item" data-view="needs-verify">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M3 14c0-3 10-3 10 0"/></svg>
+        Needs verify
+        <span class="nav-badge" id="badge-needs-verify">0</span>
+      </div>
+      <div class="nav-item" data-view="verified">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 8l3 3 7-7"/></svg>
+        Verified
+        <span class="nav-badge" id="badge-verified">0</span>
+      </div>
+      <div class="nav-item" data-view="all">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6" stroke-linecap="round"/></svg>
+        All bugs
+        <span class="nav-badge" id="badge-all">0</span>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <!-- Module Progress -->
+    <div class="nav-section">
+      <div class="nav-label">Module progress</div>
+    </div>
+    <div class="progress-section" id="module-progress">
+      <!-- rendered by JS -->
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Tools</div>
+      <a class="nav-item" href="../fixer/">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="3" width="5" height="10" rx="1"/><rect x="9" y="3" width="5" height="5" rx="1"/><rect x="9" y="10" width="5" height="3" rx="1"/></svg>
+        Fixer view →
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="avatar" id="user-avatar">?</div>
+      <div>
+        <div class="footer-name" id="footer-name">—</div>
+        <div class="footer-role">Reporter</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="greeting-row">
+        <div class="avatar-lg" id="avatar-lg">?</div>
+        <h1 id="greeting-h1">Hey —</h1>
+      </div>
+      <p class="page-sub" id="page-sub">Report a bug or check the status of your reports.</p>
+    </div>
+
+    <!-- New Bug Report Form (Dashboard view only) -->
+    <div class="card" id="form-card">
+      <div class="card-label">New bug report</div>
+
+      <div class="field">
+        <label class="field-label">What went wrong?</label>
+        <textarea class="field-input" id="title-input" placeholder="Describe the issue — what happened, what you expected..."></textarea>
+      </div>
+
+      <div class="two-col">
+        <div class="field">
+          <label class="field-label">Module</label>
+          <div class="select-wrapper">
+            <select class="field-select" id="module-select">
+              <option value="">Select module...</option>
+              <option value="keuangan">Keuangan</option>
+              <option value="inventori">Inventori</option>
+              <option value="penjualan">Penjualan &amp; CRM</option>
+              <option value="pengadaan">Pengadaan</option>
+              <option value="manufaktur">Manufaktur</option>
+              <option value="sdm">SDM</option>
+              <option value="dokumen">Dokumen</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field" id="submodule-field">
+          <label class="field-label">Sub-module</label>
+          <div class="select-wrapper">
+            <select class="field-select" id="submodule-select">
+              <option value="">Select sub-module...</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Category</label>
+        <div class="select-wrapper">
+          <select class="field-select" id="category-select">
+            <option value="">Select category...</option>
+            <option value="Button/action">Button / action not working</option>
+            <option value="Missing data">Missing or wrong data</option>
+            <option value="Missing feature">Missing action / feature</option>
+            <option value="Form">Form not submitting</option>
+            <option value="Validation">Validation error</option>
+            <option value="UI">UI / display issue</option>
+            <option value="Performance">Slow / performance issue</option>
+            <option value="Crash">Page crash / error</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Screenshot</label>
+        <div class="upload-zone" id="upload-zone">
+          <input type="file" id="file-input" accept="image/*" style="display:none" />
+          <div class="upload-content">
+            <svg class="upload-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.3">
+              <rect x="3" y="5" width="22" height="18" rx="3"/>
+              <circle cx="19" cy="11" r="2.2"/>
+              <path d="M3 20l6-5 4.5 4.5 3.5-3.5L22 20"/>
+            </svg>
+            <div class="upload-text">Drop, paste, or click to add screenshot</div>
+            <div class="upload-hint">1 screenshot per report · PNG, JPG</div>
+          </div>
+          <img class="preview-img" id="preview-img" src="" alt="">
+          <button class="upload-remove" id="upload-remove" type="button">&times;</button>
+        </div>
+      </div>
+
+      <button class="submit-btn" id="submit-btn" disabled>Submit report</button>
+    </div>
+
+    <!-- Bug List Card -->
+    <div class="card">
+      <div class="list-header">
+        <span class="list-title" id="feed-title">Your reports</span>
+        <span class="list-count" id="feed-count">0 total</span>
+      </div>
+      <div id="feed"></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="../shared/config.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  /* ============================================================
+     SUBMODULES (from darren-bug-tracker-v3.html)
+     ============================================================ */
+  const SUBMODULES = {
+    keuangan: [
+      { group: 'Transaksi', items: ['Invoicing', 'Piutang Usaha (AR)', 'Hutang Usaha (AP)', 'Nota Kredit/Debit', 'Peti Kas'] },
+      { group: 'Akuntansi', items: ['Jurnal Umum', 'Transaksi Akun', 'Rekonsiliasi Bank', 'Chart of Accounts'] },
+      { group: 'Laporan & Setup', items: ['Laporan Keuangan', 'Perencanaan Arus Kas', 'Saldo Awal', 'Kurs Mata Uang', 'Periode Fiskal'] },
+      { group: 'Aset Tetap', items: ['Aset Tetap'] },
+    ],
+    inventori: [
+      { group: 'Umum', items: ['Dashboard Inventori', 'Kelola Produk', 'Kategori Produk'] },
+      { group: 'Stok', items: ['Level Stok', 'Pergerakan Stok', 'Transfer Stok', 'Gudang & Lokasi', 'Fabric Rolls'] },
+      { group: 'Kontrol', items: ['Stok Opname', 'Opname Batch', 'Peringatan Stok', 'Laporan Inventori'] },
+      { group: 'Pengaturan', items: ['Saldo Awal Stok', 'Pengaturan Inventori'] },
+    ],
+    penjualan: [
+      { group: 'Umum', items: ['Dashboard Sales', 'Kelola Pelanggan', 'Penawaran', 'Pesanan Penjualan', 'Penjualan', 'Lead & Pipeline', 'Point of Sale (POS)'] },
+      { group: 'Harga & Komisi', items: ['Daftar Harga', 'Skema Diskon', 'Salesperson & Komisi'] },
+    ],
+    pengadaan: [
+      { group: 'Umum', items: ['Dashboard Pengadaan', 'Pemasok (Vendor)', 'Pesanan Pembelian', 'Permintaan Pembelian', 'Surat Jalan Masuk'] },
+    ],
+    manufaktur: [
+      { group: 'Perencanaan', items: ['Bill of Materials (BoM)', 'Kebutuhan Material', 'Perencanaan (MPS)', 'Daftar Cost Sheet'] },
+      { group: 'Produksi', items: ['Work Center', 'Grup Mesin', 'Proses', 'Routing', 'Perintah Kerja (SPK)', 'Jadwal Produksi', 'Daftar Cut Plan'] },
+      { group: 'Kualitas & Mitra', items: ['Kontrol Kualitas (QC)', 'Order Subkontrak', 'Registri Mitra CMT'] },
+    ],
+    sdm: [
+      { group: 'SDM', items: ['Data Karyawan', 'Penggajian', 'Absensi', 'Jadwal Shift', 'Onboarding'] },
+    ],
+    dokumen: [
+      { group: 'Dokumen', items: ['Upload Dokumen', 'Template', 'Approval Dokumen'] },
+    ],
+  };
+
+  /* Human-readable module names */
+  const MODULE_LABELS = {
+    keuangan:  'Keuangan',
+    inventori: 'Inventori',
+    penjualan: 'Penjualan & CRM',
+    pengadaan: 'Pengadaan',
+    manufaktur:'Manufaktur',
+    sdm:       'SDM',
+    dokumen:   'Dokumen',
+  };
+
+  /* Module order for progress section */
+  const MODULE_ORDER = ['Keuangan','Inventori','Penjualan','Pengadaan','Manufaktur','SDM','Dokumen'];
+
+  /* ============================================================
+     State
+     ============================================================ */
+  let currentName       = localStorage.getItem('reporter-name') || '';
+  let myBugs            = [];
+  let allBugs           = [];
+  let activeView        = 'dashboard';
+  let expandedIds       = new Set();  // allow multiple expanded
+  let screenshotFile    = null;
+  let screenshotDataURL = null;
+  let isSubmitting      = false;
+  let collapsedGroups   = new Set();
+  let channel           = null;
+
+  /* ============================================================
+     DOM Refs
+     ============================================================ */
+  const $ = id => document.getElementById(id);
+  const pickerEl        = $('identity-picker');
+  const loginSelect     = $('login-select');
+  const loginBtn        = $('login-btn');
+  const mainView        = $('main-view');
+  const titleInput      = $('title-input');
+  const moduleSelect    = $('module-select');
+  const submoduleField  = $('submodule-field');
+  const submoduleSelect = $('submodule-select');
+  const categorySelect  = $('category-select');
+  const uploadZone      = $('upload-zone');
+  const fileInput       = $('file-input');
+  const previewImg      = $('preview-img');
+  const uploadRemove    = $('upload-remove');
+  const submitBtn       = $('submit-btn');
+  const formCard        = $('form-card');
+  const feedEl          = $('feed');
+  const feedTitle       = $('feed-title');
+  const feedCount       = $('feed-count');
+  const lightbox        = $('lightbox');
+  const lightboxImg     = $('lightbox-img');
+
+  /* ============================================================
+     Helpers
+     ============================================================ */
+  function statusClass(s) {
+    return {
+      'Open':        's-open',
+      'In Progress': 's-in-progress',
+      'Fixed':       's-fixed',
+      'Verified':    's-verified',
+      'Closed':      's-closed',
+    }[s] || 's-open';
+  }
+
+  /* Extract top-level module segment for grouping */
+  function topModule(moduleStr) {
+    if (!moduleStr) return null;
+    return moduleStr.split(' / ')[0].trim();
+  }
+
+  /* Map stored module name to one of our 7 canonical groups */
+  function canonicalModule(moduleStr) {
+    if (!moduleStr) return null;
+    const top = topModule(moduleStr).toLowerCase();
+    // Direct key match
+    if (SUBMODULES[top]) return MODULE_LABELS[top] || top;
+    // Fuzzy match against labels
+    for (const [key, label] of Object.entries(MODULE_LABELS)) {
+      if (top.startsWith(key) || top.includes(key)) return label;
+    }
+    return top.charAt(0).toUpperCase() + top.slice(1);
+  }
+
+  /* ============================================================
+     1. Login
+     ============================================================ */
+  REPORTERS.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = opt.textContent = name;
+    loginSelect.appendChild(opt);
+  });
+
+  loginSelect.addEventListener('change', () => {
+    loginBtn.disabled = !loginSelect.value;
+    loginSelect.classList.toggle('placeholder', !loginSelect.value);
+  });
+
+  loginBtn.addEventListener('click', () => {
+    if (!loginSelect.value) return;
+    currentName = loginSelect.value;
+    localStorage.setItem('reporter-name', currentName);
+    pickerEl.classList.add('hidden');
+    setTimeout(() => { pickerEl.style.display = 'none'; }, 300);
+    initApp();
+  });
+
+  /* ============================================================
+     2. Nav / View switching
+     ============================================================ */
+  document.querySelectorAll('.nav-item[data-view]').forEach(item => {
+    item.addEventListener('click', () => switchView(item.dataset.view));
+  });
+
+  const VIEW_META = {
+    dashboard:    { sub: 'Report a bug or check the status of your reports.',   title: 'Your reports',       empty: 'No bugs reported yet',        emptySub: "When you report a bug it'll show up here with live status updates." },
+    open:         { sub: 'Your open bugs waiting to be fixed.',                  title: 'Open bugs',          empty: 'No open bugs',                emptySub: 'All your open bugs have been resolved.' },
+    'needs-verify':{ sub: 'Fixed bugs waiting for your verification.',           title: 'Needs verification', empty: 'Nothing to verify',            emptySub: "Bugs marked Fixed by the fixer will appear here." },
+    verified:     { sub: 'Bugs you have verified as resolved.',                  title: 'Verified bugs',      empty: 'No verified bugs yet',         emptySub: "Bugs you've confirmed as fixed will appear here." },
+    all:          { sub: 'All bugs you have reported.',                          title: 'All your bugs',      empty: 'No bugs yet',                  emptySub: "You haven't reported any bugs yet." },
+  };
+
+  function switchView(view) {
+    activeView = view;
+    expandedIds.clear();
+
+    document.querySelectorAll('.nav-item[data-view]').forEach(el =>
+      el.classList.toggle('active', el.dataset.view === view)
+    );
+
+    formCard.style.display = view === 'dashboard' ? '' : 'none';
+    $('page-sub').textContent = (VIEW_META[view] || VIEW_META.dashboard).sub;
+    renderFeed();
+  }
+
+  /* ============================================================
+     3. Module / Sub-module picker
+     ============================================================ */
+  moduleSelect.addEventListener('change', () => {
+    const val = moduleSelect.value;
+    const groups = SUBMODULES[val];
+    if (val && groups) {
+      let html = '<option value="">Select sub-module...</option>';
+      groups.forEach(({ group, items }) => {
+        html += `<optgroup label="${esc(group)}">${items.map(i => `<option value="${esc(i)}">${esc(i)}</option>`).join('')}</optgroup>`;
+      });
+      submoduleSelect.innerHTML = html;
+      submoduleField.style.display = 'flex';
+    } else {
+      submoduleField.style.display = 'none';
+      submoduleSelect.innerHTML = '<option value="">Select sub-module...</option>';
+    }
+    updateSubmitState();
+  });
+
+  function getModuleValue() {
+    const mod = moduleSelect.value;
+    if (!mod) return null;
+    const label = MODULE_LABELS[mod] || mod;
+    const sub   = submoduleSelect.value;
+    return sub ? `${label} / ${sub}` : label;
+  }
+
+  /* ============================================================
+     4. Screenshot
+     ============================================================ */
+  uploadZone.addEventListener('click', e => {
+    if (!e.target.closest('.upload-remove') && !screenshotDataURL) fileInput.click();
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) handleFile(fileInput.files[0]);
+  });
+
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    handleFile(e.dataTransfer.files[0]);
+  });
+
+  document.addEventListener('paste', e => {
+    if (!e.clipboardData?.items) return;
+    for (const item of e.clipboardData.items) {
+      if (item.type.startsWith('image/')) { e.preventDefault(); handleFile(item.getAsFile()); break; }
+    }
+  });
+
+  uploadRemove.addEventListener('click', e => { e.stopPropagation(); clearScreenshot(); });
+
+  function handleFile(file) {
+    if (!file?.type.startsWith('image/')) return;
+    screenshotFile = file;
+    const reader = new FileReader();
+    reader.onload = e2 => { screenshotDataURL = e2.target.result; renderUploadZone(); };
+    reader.readAsDataURL(file);
+  }
+
+  function clearScreenshot() {
+    screenshotFile = screenshotDataURL = null;
+    fileInput.value = '';
+    renderUploadZone();
+  }
+
+  function renderUploadZone() {
+    if (screenshotDataURL) {
+      uploadZone.classList.add('has-image');
+      previewImg.src = screenshotDataURL;
+    } else {
+      uploadZone.classList.remove('has-image');
+      previewImg.src = '';
+    }
+  }
+
+  /* ============================================================
+     5. Submit state
+     ============================================================ */
+  titleInput.addEventListener('input', updateSubmitState);
+  function updateSubmitState() {
+    submitBtn.disabled = !titleInput.value.trim() || isSubmitting;
+  }
+
+  /* ============================================================
+     6. Form submission
+     ============================================================ */
+  submitBtn.addEventListener('click', handleSubmit);
+
+  async function handleSubmit() {
+    const title = titleInput.value.trim();
+    if (!title || isSubmitting) return;
+
+    isSubmitting = true;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    let screenshot_url = null;
+    try {
+      if (screenshotFile) {
+        const fileName = `bugs/${Date.now()}_${screenshotFile.name || 'shot.png'}`;
+        const { error: upErr } = await sb.storage.from('screenshots')
+          .upload(fileName, screenshotFile, { contentType: screenshotFile.type, upsert: false });
+        if (upErr) throw upErr;
+        const { data: urlData } = sb.storage.from('screenshots').getPublicUrl(fileName);
+        screenshot_url = urlData.publicUrl;
+      }
+
+      const category = categorySelect.value;
+      const moduleVal = getModuleValue();
+
+      /* Build insert payload — store category in notes if no category column */
+      const payload = {
+        title,
+        module:        moduleVal,
+        reporter:      currentName,
+        screenshot_url,
+        status:        'Open',
+        severity:      'Medium',
+      };
+
+      /* Try to use a category column; fall back to prefixing notes */
+      try {
+        payload.category = category || null;
+      } catch(_) { /* ignore */ }
+
+      if (!payload.category && category) {
+        payload.notes = `Category: ${category}`;
+      }
+
+      const { data, error } = await sb.from('bugs').insert(payload).select().single();
+      if (error) {
+        /* If category column doesn't exist, retry without it */
+        if (error.message && error.message.includes('category')) {
+          delete payload.category;
+          if (category) payload.notes = `Category: ${category}`;
+          const retry = await sb.from('bugs').insert(payload).select().single();
+          if (retry.error) throw retry.error;
+          handleInsertSuccess(retry.data);
+        } else {
+          throw error;
+        }
+      } else {
+        handleInsertSuccess(data);
+      }
+
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || 'Failed to report bug', true);
+    } finally {
+      isSubmitting = false;
+      submitBtn.textContent = 'Submit report';
+      updateSubmitState();
+    }
+  }
+
+  function handleInsertSuccess(data) {
+    showToast('Bug reported');
+    if (data) {
+      myBugs.unshift(data);
+      allBugs.unshift(data);
+      updateBadges();
+      renderModuleProgress();
+      renderFeed(data.id);
+    }
+    // Reset form
+    titleInput.value = '';
+    moduleSelect.value = '';
+    categorySelect.value = '';
+    submoduleField.style.display = 'none';
+    submoduleSelect.innerHTML = '<option value="">Select sub-module...</option>';
+    clearScreenshot();
+    updateSubmitState();
+  }
+
+  /* ============================================================
+     7. Load bugs
+     ============================================================ */
+  async function loadMyBugs() {
+    const { data, error } = await sb.from('bugs').select('*')
+      .eq('reporter', currentName).order('created_at', { ascending: false });
+    if (error) { showToast('Failed to load bugs', true); return; }
+    myBugs = data || [];
+    updateBadges();
+  }
+
+  async function loadAllBugs() {
+    const { data, error } = await sb.from('bugs').select('*')
+      .order('created_at', { ascending: false });
+    if (error) return;
+    allBugs = data || [];
+  }
+
+  /* ============================================================
+     8. Badge counts
+     ============================================================ */
+  function updateBadges() {
+    const open        = myBugs.filter(b => b.status === 'Open').length;
+    const needsVerify = myBugs.filter(b => b.status === 'Fixed').length;
+    const verified    = myBugs.filter(b => ['Verified','Closed'].includes(b.status)).length;
+    const all         = myBugs.length;
+
+    $('badge-open').textContent         = open;
+    $('badge-needs-verify').textContent = needsVerify;
+    $('badge-verified').textContent     = verified;
+    $('badge-all').textContent          = all;
+
+    $('badge-open').className    = 'nav-badge' + (open > 0 ? ' red' : '');
+    $('badge-needs-verify').className = 'nav-badge' + (needsVerify > 0 ? ' red' : '');
+  }
+
+  /* ============================================================
+     9. Module progress
+     ============================================================ */
+  function renderModuleProgress() {
+    const container = $('module-progress');
+    if (!container) return;
+
+    /* Count bugs per canonical module from ALL bugs */
+    const stats = {}; // { moduleName: { total, open } }
+    allBugs.forEach(b => {
+      const mod = canonicalModule(b.module);
+      if (!mod) return;
+      if (!stats[mod]) stats[mod] = { total: 0, open: 0 };
+      stats[mod].total++;
+      if (b.status === 'Open' || b.status === 'In Progress') stats[mod].open++;
+    });
+
+    /* Filter to modules that have bugs, in canonical order, max 7 */
+    const modules = MODULE_ORDER.filter(m => stats[m] && stats[m].total > 0).slice(0, 7);
+
+    if (modules.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+
+    let html = '';
+    modules.forEach(mod => {
+      const { total, open } = stats[mod];
+      const pct = open === 0 ? 100 : Math.round(((total - open) / total) * 100);
+      const pctClass  = pct >= 95 ? 'pct-high'  : pct >= 80 ? 'pct-mid'  : 'pct-low';
+      const fillClass = pct >= 95 ? 'fill-high' : pct >= 80 ? 'fill-mid' : 'fill-low';
+      const meta = open === 0 ? 'No open bugs' : `${open} open bug${open !== 1 ? 's' : ''}`;
+
+      html += `
+        <div class="progress-item">
+          <div class="progress-header">
+            <span class="progress-module">${esc(mod)}</span>
+            <span class="progress-pct ${pctClass}">${pct}%</span>
+          </div>
+          <div class="progress-meta">${meta}</div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill ${fillClass}" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+  }
+
+  /* ============================================================
+     10. Feed rendering
+     ============================================================ */
+  function getDisplayBugs() {
+    switch (activeView) {
+      case 'dashboard':    return myBugs;
+      case 'open':         return myBugs.filter(b => b.status === 'Open');
+      case 'needs-verify': return myBugs.filter(b => b.status === 'Fixed');
+      case 'verified':     return myBugs.filter(b => ['Verified','Closed'].includes(b.status));
+      case 'all':          return myBugs;
+      default:             return myBugs;
+    }
+  }
+
+  function getDateKey(iso) {
+    const d = new Date(iso);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().split('T')[0];
+  }
+
+  function getDateLabel(key) {
+    const today = new Date();
+    const todayKey = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString().split('T')[0];
+    const yest = new Date(today); yest.setDate(yest.getDate() - 1);
+    const yestKey  = new Date(yest.getFullYear(), yest.getMonth(), yest.getDate()).toISOString().split('T')[0];
+    if (key === todayKey) return 'Today';
+    if (key === yestKey)  return 'Yesterday';
+    const d = new Date(key + 'T12:00:00');
+    return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
+  }
+
+  function renderFeed(newId) {
+    const meta = VIEW_META[activeView] || VIEW_META.dashboard;
+    const bugs = getDisplayBugs();
+
+    feedTitle.textContent = meta.title;
+    feedCount.textContent = `${bugs.length} total`;
+
+    if (bugs.length === 0) {
+      feedEl.innerHTML = `
+        <div class="empty-state">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.35">
+            <circle cx="18" cy="18" r="14"/>
+            <path d="M12 15c0-1.5 1.5-3 3-3s3 1.5 3 3" stroke-linecap="round"/>
+            <path d="M18 15c0-1.5 1.5-3 3-3s3 1.5 3 3" stroke-linecap="round"/>
+            <path d="M12 24c1.5 2.5 4 3.5 6 3.5s4.5-1 6-3.5" stroke-linecap="round"/>
+          </svg>
+          <p class="empty-title">${esc(meta.empty)}</p>
+          <p class="empty-desc">${esc(meta.emptySub)}</p>
+        </div>`;
+      return;
+    }
+
+    /* Group by date */
+    const grouped = new Map();
+    bugs.forEach(b => {
+      const k = getDateKey(b.created_at);
+      if (!grouped.has(k)) grouped.set(k, []);
+      grouped.get(k).push(b);
+    });
+
+    let html = '';
+    for (const [dateKey, dateBugs] of grouped) {
+      const isCollapsed = collapsedGroups.has(dateKey);
+      html += `<div class="group-wrap" data-date-key="${esc(dateKey)}">`;
+      html += `<div class="group-row">
+        <span class="group-name">${esc(getDateLabel(dateKey))}</span>
+        <span class="group-n">${dateBugs.length}</span>
+      </div>`;
+      html += `<div class="group-body${isCollapsed ? ' collapsed' : ''}">`;
+      dateBugs.forEach(b => { html += bugRowHTML(b, String(b.id) === String(newId)); });
+      html += '</div></div>';
+    }
+
+    feedEl.innerHTML = html;
+    bindFeedEvents();
+  }
+
+  /* ---- Placeholder SVG for compare grid ---- */
+  const PLACEHOLDER_SVG = `<svg viewBox="0 0 28 28"><rect x="3" y="5" width="22" height="18" rx="2"/><path d="M3 18l6-5 4 4 3-3 6 5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="19" cy="10" r="2"/></svg>`;
+
+  function bugRowHTML(bug, isNew) {
+    const sc    = statusClass(bug.status);
+    const isExp = expandedIds.has(String(bug.id));
+
+    /* Module tags */
+    const modTags = bug.module
+      ? bug.module.split(' / ').map(p => `<span class="tag">${esc(p)}</span>`).join('')
+      : '';
+
+    const statusLabel = bug.status === 'Fixed' ? 'Fixed — tap to verify' : esc(bug.status);
+    const statusTag   = `<span class="status-pill ${sc}"><span class="dot"></span>${statusLabel}</span>`;
+
+    /* ---- Verify panel (Fixed bugs) ---- */
+    let afterContent = '';
+    if (bug.status === 'Fixed') {
+      /* Before col */
+      const beforeImg = bug.screenshot_url
+        ? `<div class="compare-img"><img src="${esc(bug.screenshot_url)}" alt="Before" data-lightbox="${esc(bug.screenshot_url)}"></div>
+           <div class="compare-note">Submitted by you · ${timeAgo(bug.created_at)}</div>`
+        : `<div class="compare-img">${PLACEHOLDER_SVG}</div>
+           <div class="compare-note">No screenshot uploaded</div>`;
+
+      /* After col (fixer screenshot not in DB) */
+      const afterImg = `<div class="compare-img">${PLACEHOLDER_SVG}</div>
+        <div class="compare-note">Fixer screenshot not uploaded yet</div>`;
+
+      /* Fix notes */
+      const fixNotesSection = bug.fix_notes
+        ? `<div class="fix-notes-section">
+             <div class="fix-notes-label">Fix notes</div>
+             <div class="fix-notes-text">${esc(bug.fix_notes)}</div>
+           </div>`
+        : '';
+
+      /* Footer: already Verified? */
+      const verifyFooter = bug.status === 'Verified'
+        ? `<span class="verified-badge"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>Verified by you</span>
+           <span class="verify-hint" style="margin-left:8px">Thank you for confirming</span>`
+        : `<button class="verify-btn" data-verify-id="${bug.id}">&#10003; Mark as verified</button>
+           <span class="verify-hint">Confirms the bug is resolved on your end</span>`;
+
+      afterContent = `
+        <div class="verify-panel${isExp ? ' open' : ''}" id="vp-${bug.id}">
+          <div class="verify-panel-header">
+            <span class="verify-panel-title">Verify this fix</span>
+            <span class="verify-panel-sub">Compare before &amp; after, then confirm</span>
+          </div>
+          <div class="compare-grid">
+            <div class="compare-col">
+              <div class="compare-label before">Before (your screenshot)</div>
+              ${beforeImg}
+            </div>
+            <div class="compare-col">
+              <div class="compare-label after">After (fixer screenshot)</div>
+              ${afterImg}
+            </div>
+          </div>
+          ${fixNotesSection}
+          <div class="verify-footer" id="vf-${bug.id}">
+            ${verifyFooter}
+          </div>
+        </div>`;
+    } else {
+      /* Non-Fixed: plain expand with fix notes if any */
+      let expandInner = '';
+      if (isExp) {
+        const ss = bug.screenshot_url
+          ? `<img class="expand-screenshot" src="${esc(bug.screenshot_url)}" alt="Screenshot" data-lightbox="${esc(bug.screenshot_url)}">`
+          : '';
+        const notes = bug.fix_notes
+          ? `<div class="expand-notes">${esc(bug.fix_notes)}</div>`
+          : `<div class="expand-notes empty">No fix notes yet</div>`;
+        expandInner = `<div class="expand-inner">${ss}${ss ? '<div style="height:8px"></div>' : ''}<div class="expand-label">Fix Notes</div>${notes}</div>`;
+      }
+      afterContent = `<div class="bug-expand${isExp ? ' open' : ''}" data-expand-id="${bug.id}">${expandInner}</div>`;
+    }
+
+    return `
+      <div class="bug-row${isNew ? ' new-row' : ''}" data-id="${bug.id}">
+        <div class="bug-row-main${isExp ? ' expanded' : ''}" data-row-id="${bug.id}">
+          <div class="bug-icon">
+            <svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="2"/>
+              <path d="M5 8h6M5 5.5h6M5 10.5h4" stroke-linecap="round"/></svg>
+          </div>
+          <div class="bug-body">
+            <div class="bug-title">${esc(bug.title)}</div>
+            <div class="bug-tags">${modTags}${statusTag}</div>
+          </div>
+          <div class="bug-time">${timeAgo(bug.created_at)}</div>
+          <svg class="chevron" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        ${afterContent}
+      </div>`;
+  }
+
+  function bindFeedEvents() {
+    /* Group row toggle */
+    feedEl.querySelectorAll('.group-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const wrap = row.closest('.group-wrap');
+        const key  = wrap.dataset.dateKey;
+        const body = wrap.querySelector('.group-body');
+        if (collapsedGroups.has(key)) {
+          collapsedGroups.delete(key);
+          body.classList.remove('collapsed');
+        } else {
+          collapsedGroups.add(key);
+          body.classList.add('collapsed');
+        }
+      });
+    });
+
+    /* Bug row click → expand/collapse */
+    feedEl.querySelectorAll('.bug-row-main').forEach(rowMain => {
+      rowMain.addEventListener('click', e => {
+        if (e.target.closest('[data-lightbox]') || e.target.closest('.verify-btn')) return;
+        const id = rowMain.dataset.rowId;
+        if (expandedIds.has(id)) {
+          expandedIds.delete(id);
+        } else {
+          expandedIds.add(id);
+        }
+        renderFeed();
+      });
+    });
+
+    /* Verify buttons */
+    feedEl.querySelectorAll('.verify-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        handleVerify(btn.dataset.verifyId, btn);
+      });
+    });
+
+    /* Lightbox triggers */
+    feedEl.querySelectorAll('[data-lightbox]').forEach(el => {
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        lightboxImg.src = el.dataset.lightbox;
+        lightbox.classList.add('show');
+      });
+    });
+  }
+
+  /* ============================================================
+     11. Mark as verified
+     ============================================================ */
+  async function handleVerify(id, btn) {
+    if (!id) return;
+    btn.disabled = true;
+    btn.textContent = 'Verifying...';
+
+    try {
+      const { error } = await sb.from('bugs').update({ status: 'Verified' }).eq('id', id);
+      if (error) throw error;
+
+      /* Optimistic update */
+      const i = myBugs.findIndex(b => String(b.id) === String(id));
+      if (i !== -1) myBugs[i] = { ...myBugs[i], status: 'Verified' };
+      const ai = allBugs.findIndex(b => String(b.id) === String(id));
+      if (ai !== -1) allBugs[ai] = { ...allBugs[ai], status: 'Verified' };
+
+      showToast('Marked as verified');
+      updateBadges();
+      renderModuleProgress();
+      renderFeed();
+
+    } catch (err) {
+      console.error(err);
+      btn.disabled = false;
+      btn.textContent = '✓ Mark as verified';
+      showToast(err.message || 'Failed to verify', true);
+    }
+  }
+
+  /* ============================================================
+     12. Realtime
+     ============================================================ */
+  function setupRealtime() {
+    if (channel) sb.removeChannel(channel);
+    channel = sb.channel(`reporter-${currentName}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'bugs',
+        filter: `reporter=eq.${currentName}`
+      }, payload => {
+        const { eventType, new: n, old: o } = payload;
+        if (eventType === 'INSERT') {
+          if (!myBugs.find(b => b.id === n.id)) { myBugs.unshift(n); allBugs.unshift(n); }
+        } else if (eventType === 'UPDATE') {
+          const i  = myBugs.findIndex(b => b.id === n.id);
+          if (i  !== -1) myBugs[i]  = { ...myBugs[i],  ...n };
+          const ai = allBugs.findIndex(b => b.id === n.id);
+          if (ai !== -1) allBugs[ai] = { ...allBugs[ai], ...n };
+        } else if (eventType === 'DELETE') {
+          myBugs  = myBugs.filter(b => b.id !== o.id);
+          allBugs = allBugs.filter(b => b.id !== o.id);
+          expandedIds.delete(String(o.id));
+        }
+        updateBadges();
+        renderModuleProgress();
+        renderFeed();
+      })
+      .subscribe();
+  }
+
+  /* ============================================================
+     13. Lightbox
+     ============================================================ */
+  lightbox.addEventListener('click', () => {
+    lightbox.classList.remove('show');
+    lightboxImg.src = '';
+  });
+
+  /* ============================================================
+     14. Offline
+     ============================================================ */
+  window.addEventListener('offline', () => $('offline-banner').classList.add('show'));
+  window.addEventListener('online',  () => $('offline-banner').classList.remove('show'));
+
+  /* ============================================================
+     15. Init
+     ============================================================ */
+  async function initApp() {
+    const initial = currentName.charAt(0).toUpperCase();
+    $('user-avatar').textContent  = initial;
+    $('avatar-lg').textContent    = initial;
+    $('footer-name').textContent  = currentName;
+    $('greeting-h1').textContent  = `Hey ${currentName}`;
+
+    mainView.style.display = 'flex';
+
+    await Promise.all([loadMyBugs(), loadAllBugs()]);
+    renderModuleProgress();
+    renderFeed();
+    setupRealtime();
+  }
+
+  /* Auto-login if name saved */
+  if (currentName) {
+    pickerEl.style.display = 'none';
+    initApp();
+  }
+
+})();
+</script>
+</body>
+</html>
