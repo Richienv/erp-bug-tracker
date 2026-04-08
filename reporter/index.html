@@ -189,6 +189,7 @@
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
   #submodule-field { display: none; }
+  #submodule-field.visible { display: flex; }
 
   /* ── Upload Zone ── */
   .upload-zone {
@@ -742,9 +743,9 @@
         html += `<optgroup label="${esc(group)}">${items.map(i => `<option value="${esc(i)}">${esc(i)}</option>`).join('')}</optgroup>`;
       });
       submoduleSelect.innerHTML = html;
-      submoduleField.style.display = 'flex';
+      submoduleField.classList.add('visible');
     } else {
-      submoduleField.style.display = 'none';
+      submoduleField.classList.remove('visible');
       submoduleSelect.innerHTML = '<option value="">Select sub-module...</option>';
     }
     updateSubmitState();
@@ -903,7 +904,7 @@
     titleInput.value = '';
     moduleSelect.value = '';
     categorySelect.value = '';
-    submoduleField.style.display = 'none';
+    submoduleField.classList.remove('visible');
     submoduleSelect.innerHTML = '<option value="">Select sub-module...</option>';
     clearScreenshot();
     updateSubmitState();
