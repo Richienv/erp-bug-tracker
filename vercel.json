@@ -1,4 +1,5 @@
 {
+  "outputDirectory": ".",
   "rewrites": [
     { "source": "/reporter", "destination": "/reporter/index.html" },
     { "source": "/fixer", "destination": "/fixer/index.html" },
