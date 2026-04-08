@@ -1177,79 +1177,20 @@
     const sub = parts[1];
     const moduleStr = sub ? `${mod} → ${sub}` : mod || '—';
     const reportedDate = new Date(bug.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const category = extractCategory(bug);
 
-    // Derive grep patterns and module path from the module/submodule
-    const searchTarget = sub || mod || '';
-    const stWords = searchTarget.trim().split(/\s+/);
-    const stPascal = stWords.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
-    const stCamel  = stPascal.charAt(0).toLowerCase() + stPascal.slice(1);
-    const stKebab  = stWords.map(w => w.toLowerCase()).join('-');
-    const stDot    = stWords.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('.');
-    const grepPat  = `"${stDot}\\|${stCamel}\\|${stKebab}\\|${stPascal}"`;
+    const text = `# ${bug.bug_id} — ${bug.title}
 
-    const modKebab = (mod || '').toLowerCase().replace(/\s+/g, '-');
-    const subKebab = sub ? sub.toLowerCase().replace(/\s+/g, '-') : '';
-    const modulePath = `app/(modules)/${modKebab}${subKebab ? '/' + subKebab : ''}/`;
+${bug.title}
 
-    const ROLES = { 'Richie': 'CEO', 'Darren': 'COO', 'Raymond': 'Developer' };
-    const role = ROLES[bug.reporter] || '';
-    const reporterLine = `${bug.reporter}${role ? ` (${role})` : ''} · ${reportedDate}`;
-
-    const text = `## BUG REPORT — ${bug.bug_id}
-
-**Title:** ${bug.title}
-**Module:** ${moduleStr}
-**Reporter:** ${reporterLine}
-**Status:** ${(bug.status || '').toUpperCase()}
-${bug.fix_notes ? `**Fix Notes:** ${bug.fix_notes}` : ''}
----
-
-## TASK
-
-Fix the bug described above in the ${moduleStr} module.
-
-## STEP 1 — AUDIT (Plan Mode)
-
-Before touching any file, run:
-
-\`\`\`bash
-grep -rn ${grepPat} app/ components/ lib/ --include="*.tsx" --include="*.ts" -l
-\`\`\`
-
-Read every file returned. Identify:
-- [ ] Which component/page renders the ${searchTarget} view
-- [ ] Which server action or API route handles its data
-- [ ] Whether the feature is missing entirely or broken in logic/UI
-
-DO NOT edit anything in Step 1.
-
-## STEP 2 — DIAGNOSE
-
-Based on the audit, write a short diagnosis:
-- Root cause (missing implementation, broken logic, wrong data, UI issue)
-- Exact file(s) that need to change
-- Estimated scope (1 file vs multiple)
-
-## STEP 3 — FIX
-
-Implement the fix. Rules:
-- Grep before editing — never assume file structure
-- One file at a time — read → edit → verify
-- Follow existing patterns in the codebase (same component style, same action pattern, same error handling)
-- Do NOT refactor unrelated code
-
-## STEP 4 — VERIFY
-
-After fixing:
-- [ ] The feature works end-to-end (describe exact test steps)
-- [ ] No TypeScript errors: \`tsc --noEmit\`
-- [ ] No Prisma schema drift: \`npx prisma db push\` if schema was touched
-- [ ] Screenshot or console output confirming the fix
+Module: ${moduleStr}${category ? `\nCategory: ${category}` : ''}
+Reporter: ${bug.reporter} · ${reportedDate}${bug.screenshot_url ? `\nScreenshot: ${bug.screenshot_url}` : ''}
 
 ---
 
-**Stack:** Next.js App Router · React 19 · TypeScript · Prisma 6 · Supabase/PostgreSQL · TanStack Query v5 · shadcn/ui · Vercel
-**Module path hint:** \`${modulePath}\``;
+Audit the codebase, diagnose the root cause, and fix it. Grep before touching any file. Follow existing patterns. Run tsc --noEmit after.
+
+Stack: Next.js App Router · React 19 · TypeScript · Prisma 6 · Supabase · TanStack Query v5 · shadcn/ui`;
 
     const copyIcon = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>`;
     const imgIcon = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="10" rx="1.5"/><circle cx="5.5" cy="7" r="1.2"/><path d="M1 11l4-4 3 3 2-2 4 4"/></svg>`;
