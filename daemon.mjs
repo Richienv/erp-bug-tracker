@@ -261,22 +261,35 @@ async function fixBug(bug) {
   return true;
 }
 
-/* ── Queue ── */
-const queue = [];
+/* ── Queue (approval-gated) ── */
+const pendingBugs = new Map(); // bug_id → bug object
+const approvedQueue = [];
 let processing = false;
 
 function enqueue(bug) {
-  if (queue.some(b => b.id === bug.id)) return;
-  queue.push(bug);
-  logEvent(bug.bug_id, 'queued', `${bug.title} (${queue.length} in queue)`);
+  if (pendingBugs.has(bug.bug_id)) return;
+  pendingBugs.set(bug.bug_id, bug);
+  logEvent(bug.bug_id, 'awaiting_approval', `${bug.title} — waiting for approval`);
+  notify(`New bug: ${bug.bug_id}`, `${bug.title}\nOpen /monitor to approve`, 'default');
+}
+
+function approveBug(bugId) {
+  const bug = pendingBugs.get(bugId);
+  if (!bug) {
+    logEvent(bugId, 'failed', 'Approved but bug not found in pending list');
+    return;
+  }
+  pendingBugs.delete(bugId);
+  approvedQueue.push(bug);
+  logEvent(bugId, 'approved', `${bug.title} — queued for fix (${approvedQueue.length} in queue)`);
   processNext();
 }
 
 async function processNext() {
-  if (processing || queue.length === 0) return;
+  if (processing || approvedQueue.length === 0) return;
   processing = true;
 
-  const bug = queue.shift();
+  const bug = approvedQueue.shift();
   try {
     await fixBug(bug);
   } catch (err) {
@@ -285,7 +298,7 @@ async function processNext() {
   }
 
   processing = false;
-  processNext(); // process next in queue
+  processNext();
 }
 
 /* ── Startup ── */
@@ -326,7 +339,8 @@ async function catchUpOpenBugs() {
 
 /* ── Realtime ── */
 function startWatching() {
-  const channel = sb.channel('daemon-bugs')
+  // Watch for new bugs
+  sb.channel('daemon-bugs')
     .on('postgres_changes', {
       event: 'INSERT',
       schema: 'public',
@@ -337,10 +351,24 @@ function startWatching() {
       enqueue(bug);
     })
     .subscribe((status) => {
-      console.log(`[daemon] Realtime status: ${status}`);
+      console.log(`[daemon] Realtime (bugs): ${status}`);
     });
 
-  return channel;
+  // Watch for approvals from the monitor page
+  sb.channel('daemon-approvals')
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'daemon_logs',
+    }, (payload) => {
+      const log = payload.new;
+      if (log.event === 'approved' && log.bug_id) {
+        approveBug(log.bug_id);
+      }
+    })
+    .subscribe((status) => {
+      console.log(`[daemon] Realtime (approvals): ${status}`);
+    });
 }
 
 /* ── Manual Mode ── */

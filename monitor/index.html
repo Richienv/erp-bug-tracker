@@ -68,6 +68,8 @@
     .ev-recovery   .log-badge { background: #3E2A1A; color: #FB923C; }
     .ev-catchup    .log-badge { background: #3E2A1A; color: #FB923C; }
     .ev-received   .log-badge { background: #1A2E1A; color: #4ADE80; }
+    .ev-awaiting_approval .log-badge { background: #3E2A1A; color: #FB923C; }
+    .ev-approved   .log-badge { background: #1A2E1A; color: #4ADE80; }
     .ev-queued     .log-badge { background: #1A2A3E; color: #60A5FA; }
     .ev-processing .log-badge { background: #3E3A1A; color: #FACC15; }
     .ev-claude_start .log-badge { background: #3E3A1A; color: #FACC15; }
@@ -83,6 +85,15 @@
       height: 60vh; color: #555; gap: 8px;
     }
     .empty-state svg { opacity: 0.3; }
+
+    .approve-btn {
+      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 5px;
+      background: #22C55E; color: #000; border: none; cursor: pointer;
+      margin-left: 8px; flex-shrink: 0;
+    }
+    .approve-btn:hover { background: #16A34A; }
+    .approve-btn:disabled { opacity: 0.4; cursor: default; }
+    .approve-btn.approved { background: #333; color: #666; }
 
     .clear-btn {
       font-size: 12px; padding: 4px 10px; border-radius: 6px;
@@ -107,7 +118,7 @@
     <div class="stat">Processed: <span class="stat-val" id="stat-processed">0</span></div>
     <div class="stat">Success: <span class="stat-val" id="stat-success" style="color:#4ADE80">0</span></div>
     <div class="stat">Failed: <span class="stat-val" id="stat-failed" style="color:#F87171">0</span></div>
-    <div class="stat">Queue: <span class="stat-val" id="stat-queue">0</span></div>
+    <div class="stat">Pending: <span class="stat-val" id="stat-queue" style="color:#FB923C">0</span></div>
     <div class="stat">Current: <span class="stat-val" id="stat-current">—</span></div>
   </div>
 
@@ -132,26 +143,40 @@
     const statusLabel = document.getElementById('status-label');
 
     // Stats
-    let stats = { processed: 0, success: 0, failed: 0, queue: 0, current: '—' };
+    let stats = { processed: 0, success: 0, failed: 0, pending: 0, current: '—' };
+    const pendingBugs = new Set(); // track bug_ids awaiting approval
 
     function updateStats() {
       document.getElementById('stat-processed').textContent = stats.processed;
       document.getElementById('stat-success').textContent = stats.success;
       document.getElementById('stat-failed').textContent = stats.failed;
-      document.getElementById('stat-queue').textContent = stats.queue;
+      document.getElementById('stat-queue').textContent = stats.pending;
       document.getElementById('stat-current').textContent = stats.current;
     }
 
-    function trackStats(event, bugId, message) {
+    function trackStats(event, bugId) {
+      if (event === 'awaiting_approval' && bugId) { pendingBugs.add(bugId); stats.pending = pendingBugs.size; }
+      if (event === 'approved' && bugId) { pendingBugs.delete(bugId); stats.pending = pendingBugs.size; }
       if (event === 'processing') { stats.processed++; stats.current = bugId || '...'; }
       if (event === 'done') { stats.success++; stats.current = '—'; }
       if (event === 'failed') { stats.failed++; stats.current = '—'; }
-      if (event === 'queued') {
-        const m = message.match(/\((\d+) in queue\)/);
-        if (m) stats.queue = parseInt(m[1]);
-      }
-      if (event === 'processing' && stats.queue > 0) stats.queue--;
       updateStats();
+    }
+
+    async function approveBug(bugId, btn) {
+      btn.disabled = true;
+      btn.textContent = 'Approving...';
+      try {
+        await sb.from('daemon_logs').insert({
+          bug_id: bugId, event: 'approved', message: 'Approved from monitor'
+        });
+        btn.textContent = 'Approved';
+        btn.classList.add('approved');
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Approve';
+        alert('Failed to approve: ' + err.message);
+      }
     }
 
     function esc(s) {
@@ -168,6 +193,12 @@
     function addEntry(log) {
       emptyState.style.display = 'none';
 
+      // If this is an approval, disable the matching approve button
+      if (log.event === 'approved' && log.bug_id) {
+        const btn = document.querySelector(`.approve-btn[data-bug="${log.bug_id}"]`);
+        if (btn) { btn.textContent = 'Approved'; btn.classList.add('approved'); btn.disabled = true; }
+      }
+
       const row = document.createElement('div');
       row.className = `log-entry ev-${log.event}`;
 
@@ -182,8 +213,18 @@
         <span class="log-msg">${msg}</span>
       `;
 
+      // Add Approve button for awaiting_approval events
+      if (log.event === 'awaiting_approval' && log.bug_id) {
+        const btn = document.createElement('button');
+        btn.className = 'approve-btn';
+        btn.dataset.bug = log.bug_id;
+        btn.textContent = 'Approve';
+        btn.onclick = () => approveBug(log.bug_id, btn);
+        row.appendChild(btn);
+      }
+
       feed.appendChild(row);
-      trackStats(log.event, log.bug_id, log.message);
+      trackStats(log.event, log.bug_id);
 
       // Auto-scroll to bottom
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
