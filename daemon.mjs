@@ -123,6 +123,14 @@ ${hint}
 - If the fix requires a Prisma schema change, generate the migration too`;
 }
 
+/* ── Event Logger ── */
+async function logEvent(bugId, event, message) {
+  console.log(`[daemon] [${event}] ${bugId ? bugId + ': ' : ''}${message}`);
+  try {
+    await sb.from('daemon_logs').insert({ bug_id: bugId || null, event, message });
+  } catch (_) { /* best-effort */ }
+}
+
 /* ── ntfy Notification ── */
 async function notify(title, body, priority = 'high', actions = null) {
   const headers = {
@@ -155,8 +163,7 @@ async function fixBug(bug) {
   const branch = `fix/${bug.bug_id}-${slugify(bug.title)}`;
   const prompt = buildPrompt(bug);
 
-  console.log(`\n[daemon] Processing ${bug.bug_id}: ${bug.title}`);
-  console.log(`[daemon] Branch: ${branch}`);
+  await logEvent(bug.bug_id, 'processing', `Starting fix: ${bug.title} → branch ${branch}`);
 
   // 1. Mark as In Progress
   await sb.from('bugs').update({ status: 'In Progress' }).eq('id', bug.id);
@@ -167,14 +174,14 @@ async function fixBug(bug) {
     await git('pull', 'origin', 'main');
     await git('checkout', '-b', branch);
   } catch (err) {
-    console.error(`[daemon] Git branch failed:`, err.message);
-    await notify(`Fix failed: ${bug.bug_id}`, 'Could not create branch — manual fix needed');
+    await logEvent(bug.bug_id, 'failed', `Git branch failed: ${err.message}`);
+    await notify(`Fix failed: ${bug.bug_id}`, `${bug.title}\nBranch error: ${err.message.split('\n')[0]}`);
     await cleanupBranch(branch);
     return false;
   }
 
   // 3. Run Claude Code
-  console.log(`[daemon] Spawning Claude Code...`);
+  await logEvent(bug.bug_id, 'claude_start', 'Spawning Claude Code...');
   try {
     const { stdout, stderr } = await execFileAsync(
       CLAUDE_BIN,
@@ -186,11 +193,11 @@ async function fixBug(bug) {
         env: { ...process.env, CLAUDE_CODE_ENTRYPOINT: 'daemon' },
       }
     );
-    console.log(`[daemon] Claude Code finished. Output length: ${stdout.length}`);
+    await logEvent(bug.bug_id, 'claude_done', `Claude Code finished (${stdout.length} chars output)`);
     if (stderr) console.log(`[daemon] stderr: ${stderr.slice(0, 500)}`);
   } catch (err) {
-    console.error(`[daemon] Claude Code failed:`, err.message);
-    await notify(`Fix failed: ${bug.bug_id}`, `${bug.title}\nClaude Code error — manual fix needed`);
+    await logEvent(bug.bug_id, 'failed', `Claude Code error: ${err.message.slice(0, 200)}`);
+    await notify(`Fix failed: ${bug.bug_id}`, `${bug.title}\nClaude Code error: ${err.message.split('\n')[0]}`);
     await cleanupBranch(branch);
     return false;
   }
@@ -199,18 +206,19 @@ async function fixBug(bug) {
   const diff = await git('diff', '--stat');
   const staged = await git('diff', '--staged', '--stat');
   if (!diff && !staged) {
-    console.log(`[daemon] No changes made by Claude Code.`);
+    await logEvent(bug.bug_id, 'failed', 'Claude made no changes');
     await notify(`Fix failed: ${bug.bug_id}`, `${bug.title}\nClaude made no changes — manual fix needed`);
     await cleanupBranch(branch);
     return false;
   }
 
   // 5. Push branch
+  await logEvent(bug.bug_id, 'push', `Pushing branch ${branch}...`);
   try {
     await git('push', '-u', 'origin', branch);
   } catch (err) {
-    console.error(`[daemon] Push failed:`, err.message);
-    await notify(`Fix failed: ${bug.bug_id}`, `${bug.title}\nPush failed — manual fix needed`);
+    await logEvent(bug.bug_id, 'failed', `Push failed: ${err.message.slice(0, 200)}`);
+    await notify(`Fix failed: ${bug.bug_id}`, `${bug.title}\nPush failed: ${err.message.split('\n')[0]}`);
     await cleanupBranch(branch);
     return false;
   }
@@ -229,11 +237,10 @@ async function fixBug(bug) {
       '--head', branch,
     ], { cwd: ERP_DIR });
     prUrl = stdout.trim();
-    console.log(`[daemon] PR created: ${prUrl}`);
+    await logEvent(bug.bug_id, 'pr_created', `PR created: ${prUrl}`);
   } catch (err) {
-    console.error(`[daemon] PR creation failed:`, err.message);
     prUrl = `https://github.com/Richienv/ERP/compare/${branch}`;
-    console.log(`[daemon] Fallback compare URL: ${prUrl}`);
+    await logEvent(bug.bug_id, 'pr_created', `PR via gh failed, fallback: ${prUrl}`);
   }
 
   // 7. Update Supabase with PR link
@@ -250,7 +257,7 @@ async function fixBug(bug) {
   // 9. Return to main
   try { await git('checkout', 'main'); } catch (_) {}
 
-  console.log(`[daemon] Done with ${bug.bug_id}`);
+  await logEvent(bug.bug_id, 'done', `Fix complete — PR: ${prUrl}`);
   return true;
 }
 
@@ -261,7 +268,7 @@ let processing = false;
 function enqueue(bug) {
   if (queue.some(b => b.id === bug.id)) return;
   queue.push(bug);
-  console.log(`[daemon] Queued ${bug.bug_id}: ${bug.title} (${queue.length} in queue)`);
+  logEvent(bug.bug_id, 'queued', `${bug.title} (${queue.length} in queue)`);
   processNext();
 }
 
@@ -273,8 +280,8 @@ async function processNext() {
   try {
     await fixBug(bug);
   } catch (err) {
-    console.error(`[daemon] Unexpected error processing ${bug.bug_id}:`, err);
-    await notify(`Fix failed: ${bug.bug_id}`, `Unexpected error — manual fix needed`);
+    await logEvent(bug.bug_id, 'failed', `Unexpected error: ${err.message}`);
+    await notify(`Fix failed: ${bug.bug_id}`, `Unexpected error: ${err.message.split('\n')[0]}`);
   }
 
   processing = false;
@@ -289,7 +296,7 @@ async function recoverStuckBugs() {
     .is('pr_url', null);
 
   if (stuck && stuck.length > 0) {
-    console.log(`[daemon] Found ${stuck.length} stuck bug(s) — resetting to Open`);
+    await logEvent(null, 'recovery', `Found ${stuck.length} stuck bug(s) — resetting to Open`);
     const ids = stuck.map(b => b.bug_id).join(', ');
     for (const bug of stuck) {
       await sb.from('bugs').update({ status: 'Open' }).eq('id', bug.id);
@@ -310,7 +317,7 @@ async function catchUpOpenBugs() {
     .order('created_at', { ascending: true });
 
   if (open && open.length > 0) {
-    console.log(`[daemon] Catching up on ${open.length} open bug(s)`);
+    await logEvent(null, 'catchup', `Catching up on ${open.length} open bug(s)`);
     for (const bug of open) {
       enqueue(bug);
     }
@@ -326,7 +333,7 @@ function startWatching() {
       table: 'bugs',
     }, (payload) => {
       const bug = payload.new;
-      console.log(`[daemon] New bug received: ${bug.bug_id}`);
+      logEvent(bug.bug_id, 'received', `New bug: ${bug.title}`);
       enqueue(bug);
     })
     .subscribe((status) => {
@@ -367,15 +374,13 @@ async function main() {
   }
 
   // Daemon mode
-  console.log('[daemon] Starting auto-fix daemon...');
-  console.log(`[daemon] ERP dir: ${ERP_DIR}`);
-  console.log(`[daemon] ntfy topic: ${NTFY_TOPIC}`);
+  await logEvent(null, 'startup', `Daemon started — ERP: ${ERP_DIR}`);
 
   await recoverStuckBugs();
   await catchUpOpenBugs();
   startWatching();
 
-  console.log('[daemon] Watching for new bugs...\n');
+  await logEvent(null, 'watching', 'Watching for new bugs...');
 }
 
 main().catch(err => {

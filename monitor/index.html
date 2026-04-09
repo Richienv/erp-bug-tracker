@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daemon Monitor — Bug Tracker</title>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    body { background: #0D0D0D; color: #E0E0E0; }
+
+    .monitor-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px;
+      background: #1A1A1A;
+      border-bottom: 1px solid #2A2A2A;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .monitor-title {
+      font-size: 15px; font-weight: 600; color: #FFF;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #34C759; animation: pulse 2s ease-in-out infinite;
+    }
+    .status-dot.offline { background: #FF3B30; animation: none; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .status-label {
+      font-size: 13px; color: #8E8E93;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .stats-bar {
+      display: flex; gap: 16px; padding: 12px 20px;
+      background: #141414; border-bottom: 1px solid #2A2A2A;
+      font-size: 12px; color: #8E8E93; overflow-x: auto;
+    }
+    .stat { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .stat-val { color: #FFF; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    .log-feed {
+      padding: 12px 20px; display: flex; flex-direction: column; gap: 2px;
+      font-family: var(--font-mono); font-size: 13px; line-height: 1.6;
+      min-height: calc(100vh - 120px);
+    }
+
+    .log-entry {
+      display: flex; gap: 10px; padding: 4px 8px; border-radius: 4px;
+      animation: fadeIn 0.3s ease;
+    }
+    .log-entry:hover { background: #1A1A1A; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .log-time { color: #555; flex-shrink: 0; min-width: 70px; }
+    .log-badge {
+      font-size: 11px; font-weight: 600; padding: 1px 6px;
+      border-radius: 4px; flex-shrink: 0; min-width: 80px; text-align: center;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .log-bug { color: #8E8E93; flex-shrink: 0; min-width: 64px; }
+    .log-msg { color: #CCC; word-break: break-word; }
+
+    /* Event colors */
+    .ev-startup    .log-badge { background: #1A1A3E; color: #818CF8; }
+    .ev-watching   .log-badge { background: #1A1A3E; color: #818CF8; }
+    .ev-recovery   .log-badge { background: #3E2A1A; color: #FB923C; }
+    .ev-catchup    .log-badge { background: #3E2A1A; color: #FB923C; }
+    .ev-received   .log-badge { background: #1A2E1A; color: #4ADE80; }
+    .ev-queued     .log-badge { background: #1A2A3E; color: #60A5FA; }
+    .ev-processing .log-badge { background: #3E3A1A; color: #FACC15; }
+    .ev-claude_start .log-badge { background: #3E3A1A; color: #FACC15; }
+    .ev-claude_done .log-badge { background: #1A2E1A; color: #4ADE80; }
+    .ev-push       .log-badge { background: #3E3A1A; color: #FACC15; }
+    .ev-pr_created .log-badge { background: #1A2E1A; color: #4ADE80; }
+    .ev-done       .log-badge { background: #1A3E1A; color: #22C55E; }
+    .ev-failed     .log-badge { background: #3E1A1A; color: #F87171; }
+    .ev-failed .log-msg { color: #F87171; }
+
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 60vh; color: #555; gap: 8px;
+    }
+    .empty-state svg { opacity: 0.3; }
+
+    .clear-btn {
+      font-size: 12px; padding: 4px 10px; border-radius: 6px;
+      background: #2A2A2A; color: #8E8E93; border: none; cursor: pointer;
+    }
+    .clear-btn:hover { background: #333; color: #CCC; }
+  </style>
+</head>
+<body>
+  <div class="monitor-header">
+    <div class="monitor-title">
+      <div class="status-dot" id="status-dot"></div>
+      Daemon Monitor
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="status-label" id="status-label">Connecting...</span>
+      <button class="clear-btn" onclick="clearLogs()">Clear</button>
+    </div>
+  </div>
+
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat">Processed: <span class="stat-val" id="stat-processed">0</span></div>
+    <div class="stat">Success: <span class="stat-val" id="stat-success" style="color:#4ADE80">0</span></div>
+    <div class="stat">Failed: <span class="stat-val" id="stat-failed" style="color:#F87171">0</span></div>
+    <div class="stat">Queue: <span class="stat-val" id="stat-queue">0</span></div>
+    <div class="stat">Current: <span class="stat-val" id="stat-current">—</span></div>
+  </div>
+
+  <div class="log-feed" id="log-feed">
+    <div class="empty-state" id="empty-state">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 7h8M8 11h5M8 15h8"/>
+      </svg>
+      <div>No events yet</div>
+      <div style="font-size:12px">Start the daemon to see live events</div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://vzonandspicspfjjatjm.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6b25hbmRzcGljc3BmamphdGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NDY4OTMsImV4cCI6MjA5MTEyMjg5M30.A_CtpuJQ4pJTOlYIP6hMDp3eHiQqjNP8M24NNhLLXqQ';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const feed = document.getElementById('log-feed');
+    const emptyState = document.getElementById('empty-state');
+    const statusDot = document.getElementById('status-dot');
+    const statusLabel = document.getElementById('status-label');
+
+    // Stats
+    let stats = { processed: 0, success: 0, failed: 0, queue: 0, current: '—' };
+
+    function updateStats() {
+      document.getElementById('stat-processed').textContent = stats.processed;
+      document.getElementById('stat-success').textContent = stats.success;
+      document.getElementById('stat-failed').textContent = stats.failed;
+      document.getElementById('stat-queue').textContent = stats.queue;
+      document.getElementById('stat-current').textContent = stats.current;
+    }
+
+    function trackStats(event, bugId, message) {
+      if (event === 'processing') { stats.processed++; stats.current = bugId || '...'; }
+      if (event === 'done') { stats.success++; stats.current = '—'; }
+      if (event === 'failed') { stats.failed++; stats.current = '—'; }
+      if (event === 'queued') {
+        const m = message.match(/\((\d+) in queue\)/);
+        if (m) stats.queue = parseInt(m[1]);
+      }
+      if (event === 'processing' && stats.queue > 0) stats.queue--;
+      updateStats();
+    }
+
+    function esc(s) {
+      const el = document.createElement('span');
+      el.textContent = s || '';
+      return el.innerHTML;
+    }
+
+    function fmtTime(ts) {
+      const d = new Date(ts);
+      return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    function addEntry(log) {
+      emptyState.style.display = 'none';
+
+      const row = document.createElement('div');
+      row.className = `log-entry ev-${log.event}`;
+
+      // Make PR URLs clickable
+      let msg = esc(log.message || '');
+      msg = msg.replace(/(https:\/\/github\.com\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:#60A5FA;text-decoration:underline">$1</a>');
+
+      row.innerHTML = `
+        <span class="log-time">${fmtTime(log.created_at)}</span>
+        <span class="log-badge">${esc(log.event)}</span>
+        <span class="log-bug">${esc(log.bug_id || '')}</span>
+        <span class="log-msg">${msg}</span>
+      `;
+
+      feed.appendChild(row);
+      trackStats(log.event, log.bug_id, log.message);
+
+      // Auto-scroll to bottom
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function clearLogs() {
+      feed.querySelectorAll('.log-entry').forEach(e => e.remove());
+      emptyState.style.display = 'flex';
+      stats = { processed: 0, success: 0, failed: 0, queue: 0, current: '—' };
+      updateStats();
+    }
+
+    // Load recent logs on page open
+    async function loadRecent() {
+      const { data, error } = await sb
+        .from('daemon_logs')
+        .select('*')
+        .order('created_at', { ascending: true })
+        .limit(200);
+
+      if (data && data.length > 0) {
+        for (const log of data) addEntry(log);
+      }
+    }
+
+    // Subscribe to new logs via Realtime
+    function subscribe() {
+      sb.channel('monitor-logs')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'daemon_logs',
+        }, (payload) => {
+          addEntry(payload.new);
+        })
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            statusDot.classList.remove('offline');
+            statusLabel.textContent = 'Live';
+            statusLabel.style.color = '#4ADE80';
+          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+            statusDot.classList.add('offline');
+            statusLabel.textContent = 'Disconnected';
+            statusLabel.style.color = '#F87171';
+          } else {
+            statusLabel.textContent = status;
+            statusLabel.style.color = '#8E8E93';
+          }
+        });
+    }
+
+    loadRecent().then(subscribe);
+  </script>
+</body>
+</html>

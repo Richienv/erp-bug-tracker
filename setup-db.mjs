@@ -91,6 +91,18 @@ const statements = [
 
   // pr_url column for auto-fix daemon
   `ALTER TABLE bugs ADD COLUMN IF NOT EXISTS pr_url text`,
+
+  // Daemon logs table for monitoring
+  `CREATE TABLE IF NOT EXISTS daemon_logs (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    bug_id text,
+    event text NOT NULL,
+    message text,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_daemon_logs_created ON daemon_logs(created_at DESC)`,
+  `ALTER TABLE daemon_logs DISABLE ROW LEVEL SECURITY`,
+  `ALTER PUBLICATION supabase_realtime ADD TABLE daemon_logs`,
 ];
 
 console.log('Setting up Supabase database...\n');

@@ -3,6 +3,7 @@
   "rewrites": [
     { "source": "/reporter", "destination": "/reporter/index.html" },
     { "source": "/fixer", "destination": "/fixer/index.html" },
+    { "source": "/monitor", "destination": "/monitor/index.html" },
     { "source": "/", "destination": "/reporter/index.html" }
   ]
 }
