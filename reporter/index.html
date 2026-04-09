@@ -255,6 +255,7 @@
   .submit-btn:hover:not(:disabled) { opacity: 0.82; }
   .submit-btn:active:not(:disabled) { opacity: 0.7; }
   .submit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .required-star { color: var(--red); margin-left: 1px; font-weight: 400; }
 
   /* ── Bug list ── */
   .list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -500,12 +501,12 @@
       <div class="card-label">New bug report</div>
 
       <div class="field">
-        <label class="field-label">What went wrong?</label>
+        <label class="field-label">What went wrong? <span class="required-star">*</span></label>
         <textarea class="field-input" id="title-input" placeholder="Describe the issue — what happened, what you expected..."></textarea>
       </div>
 
       <div class="field">
-        <label class="field-label">Steps to reproduce <span style="color:var(--text-tertiary);font-weight:400">(optional)</span></label>
+        <label class="field-label">Steps to reproduce <span class="required-star">*</span></label>
         <div class="steps-builder" id="steps-builder">
 
           <div class="steps-row">
@@ -548,7 +549,7 @@
 
       <div class="two-col">
         <div class="field">
-          <label class="field-label">Module</label>
+          <label class="field-label">Module <span class="required-star">*</span></label>
           <div class="select-wrapper">
             <select class="field-select" id="module-select">
               <option value="">Select module...</option>
@@ -574,7 +575,7 @@
       </div>
 
       <div class="field">
-        <label class="field-label">Category</label>
+        <label class="field-label">Category <span class="required-star">*</span></label>
         <div class="select-wrapper">
           <select class="field-select" id="category-select">
             <option value="">Select category...</option>
@@ -592,7 +593,7 @@
       </div>
 
       <div class="field">
-        <label class="field-label">Screenshot</label>
+        <label class="field-label">Screenshot <span class="required-star">*</span></label>
         <div class="upload-zone" id="upload-zone">
           <input type="file" id="file-input" accept="image/*" style="display:none" />
           <div class="upload-content">
@@ -790,6 +791,7 @@
       } else {
         stepsPreview.classList.remove('show');
       }
+      updateSubmitState();
     }
 
     $('action-chips').addEventListener('click', e => {
@@ -953,14 +955,21 @@
       uploadZone.classList.remove('has-image');
       previewImg.src = '';
     }
+    updateSubmitState();
   }
 
   /* ============================================================
      5. Submit state
      ============================================================ */
   titleInput.addEventListener('input', updateSubmitState);
+  categorySelect.addEventListener('change', updateSubmitState);
   function updateSubmitState() {
-    submitBtn.disabled = !titleInput.value.trim() || isSubmitting;
+    const hasTitle      = !!titleInput.value.trim();
+    const hasModule     = !!moduleSelect.value;
+    const hasCategory   = !!categorySelect.value;
+    const hasSteps      = !!stepsInput.value.trim();
+    const hasScreenshot = !!screenshotDataURL;
+    submitBtn.disabled = !(hasTitle && hasModule && hasCategory && hasSteps && hasScreenshot) || isSubmitting;
   }
 
   /* ============================================================
@@ -970,7 +979,7 @@
 
   async function handleSubmit() {
     const title = titleInput.value.trim();
-    if (!title || isSubmitting) return;
+    if (!title || !moduleSelect.value || !categorySelect.value || !stepsInput.value.trim() || !screenshotDataURL || isSubmitting) return;
 
     isSubmitting = true;
     submitBtn.disabled = true;
@@ -1035,9 +1044,24 @@
     }
   }
 
+  async function notifyRichie(bug) {
+    try {
+      await fetch('https://ntfy.sh/erp-bugs-richiekidnovell', {
+        method: 'POST',
+        headers: {
+          'Title': `🐛 Bug from ${bug.reporter}`,
+          'Priority': 'high',
+          'Tags': 'bug',
+        },
+        body: `${bug.module || 'No module'}\n"${bug.title}"`,
+      });
+    } catch (_) { /* silent — notification failure should not block the user */ }
+  }
+
   function handleInsertSuccess(data) {
     showToast('Bug reported');
     if (data) {
+      notifyRichie(data);
       myBugs.unshift(data);
       allBugs.unshift(data);
       updateBadges();
