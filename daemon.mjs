@@ -253,3 +253,132 @@ async function fixBug(bug) {
   console.log(`[daemon] Done with ${bug.bug_id}`);
   return true;
 }
+
+/* ── Queue ── */
+const queue = [];
+let processing = false;
+
+function enqueue(bug) {
+  if (queue.some(b => b.id === bug.id)) return;
+  queue.push(bug);
+  console.log(`[daemon] Queued ${bug.bug_id}: ${bug.title} (${queue.length} in queue)`);
+  processNext();
+}
+
+async function processNext() {
+  if (processing || queue.length === 0) return;
+  processing = true;
+
+  const bug = queue.shift();
+  try {
+    await fixBug(bug);
+  } catch (err) {
+    console.error(`[daemon] Unexpected error processing ${bug.bug_id}:`, err);
+    await notify(`Fix failed: ${bug.bug_id}`, `Unexpected error — manual fix needed`);
+  }
+
+  processing = false;
+  processNext(); // process next in queue
+}
+
+/* ── Startup ── */
+async function recoverStuckBugs() {
+  const { data: stuck } = await sb.from('bugs')
+    .select('*')
+    .eq('status', 'In Progress')
+    .is('pr_url', null);
+
+  if (stuck && stuck.length > 0) {
+    console.log(`[daemon] Found ${stuck.length} stuck bug(s) — resetting to Open`);
+    const ids = stuck.map(b => b.bug_id).join(', ');
+    for (const bug of stuck) {
+      await sb.from('bugs').update({ status: 'Open' }).eq('id', bug.id);
+    }
+    await notify(
+      `${stuck.length} stuck bug(s) reset`,
+      `${ids} re-queued after daemon restart`,
+      'default'
+    );
+  }
+}
+
+async function catchUpOpenBugs() {
+  const { data: open } = await sb.from('bugs')
+    .select('*')
+    .eq('status', 'Open')
+    .is('pr_url', null)
+    .order('created_at', { ascending: true });
+
+  if (open && open.length > 0) {
+    console.log(`[daemon] Catching up on ${open.length} open bug(s)`);
+    for (const bug of open) {
+      enqueue(bug);
+    }
+  }
+}
+
+/* ── Realtime ── */
+function startWatching() {
+  const channel = sb.channel('daemon-bugs')
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'bugs',
+    }, (payload) => {
+      const bug = payload.new;
+      console.log(`[daemon] New bug received: ${bug.bug_id}`);
+      enqueue(bug);
+    })
+    .subscribe((status) => {
+      console.log(`[daemon] Realtime status: ${status}`);
+    });
+
+  return channel;
+}
+
+/* ── Manual Mode ── */
+async function fixSingleBug(bugId) {
+  // Accept "ERP-042" or just "042"
+  const normalized = bugId.startsWith('ERP-') ? bugId : `ERP-${bugId.padStart(3, '0')}`;
+
+  const { data: bug, error } = await sb.from('bugs')
+    .select('*')
+    .eq('bug_id', normalized)
+    .single();
+
+  if (error || !bug) {
+    console.error(`[fix] Bug ${normalized} not found.`);
+    process.exit(1);
+  }
+
+  console.log(`[fix] Found: ${bug.bug_id} — ${bug.title}`);
+  const ok = await fixBug(bug);
+  process.exit(ok ? 0 : 1);
+}
+
+/* ── Entry Point ── */
+async function main() {
+  const args = process.argv.slice(2);
+
+  // Manual mode: npm run fix -- ERP-042
+  if (args.length > 0) {
+    await fixSingleBug(args[0]);
+    return;
+  }
+
+  // Daemon mode
+  console.log('[daemon] Starting auto-fix daemon...');
+  console.log(`[daemon] ERP dir: ${ERP_DIR}`);
+  console.log(`[daemon] ntfy topic: ${NTFY_TOPIC}`);
+
+  await recoverStuckBugs();
+  await catchUpOpenBugs();
+  startWatching();
+
+  console.log('[daemon] Watching for new bugs...\n');
+}
+
+main().catch(err => {
+  console.error('[daemon] Fatal error:', err);
+  process.exit(1);
+});
