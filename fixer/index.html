@@ -1328,6 +1328,19 @@
     rc.textContent = initials;
     footer.appendChild(rc);
 
+    // PR link button
+    if (bug.pr_url) {
+      const prLink = document.createElement('a');
+      prLink.href = bug.pr_url;
+      prLink.target = '_blank';
+      prLink.rel = 'noopener';
+      prLink.className = 'tag';
+      prLink.style.cssText = 'display:inline-flex;align-items:center;gap:3px;text-decoration:none;background:var(--blue-bg,#e8f0fe);color:var(--blue-text,#1a73e8);border:0.5px solid var(--blue,#4285f4);cursor:pointer;font-weight:500;';
+      prLink.innerHTML = '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="4" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="11" cy="4" r="2"/><path d="M5 6v4M11 6c0 3-6 3-6 6"/></svg>PR';
+      prLink.addEventListener('click', e => e.stopPropagation());
+      footer.appendChild(prLink);
+    }
+
     // Copy button (rightmost)
     footer.appendChild(createCopyButton(bug));
 
@@ -1458,6 +1471,8 @@
       <div class="status-stepper" id="status-stepper">
         ${stepperHtml}
       </div>
+
+      ${bug.pr_url ? `<div style="margin:8px 0"><a href="${esc(bug.pr_url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:5px 12px;background:var(--blue-bg,#e8f0fe);color:var(--blue-text,#1a73e8);border:0.5px solid var(--blue,#4285f4);border-radius:6px;text-decoration:none;font-weight:500;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="4" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="11" cy="4" r="2"/><path d="M5 6v4M11 6c0 3-6 3-6 6"/></svg>Review PR</a></div>` : ''}
 
       ${screenshotHtml}
 
