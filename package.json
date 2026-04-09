@@ -9,13 +9,16 @@
   "scripts": {
     "dev": "npx serve . -l 3000",
     "build": "echo 'Static site — no build step'",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "daemon": "node daemon.mjs",
+    "fix": "node daemon.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@supabase/supabase-js": "^2.102.1",
     "postgres": "^3.4.9"
   }
 }
