@@ -92,6 +92,9 @@ const statements = [
   // pr_url column for auto-fix daemon
   `ALTER TABLE bugs ADD COLUMN IF NOT EXISTS pr_url text`,
 
+  // fix_screenshot_url column for fixer screenshot
+  `ALTER TABLE bugs ADD COLUMN IF NOT EXISTS fix_screenshot_url text`,
+
   // Daemon logs table for monitoring
   `CREATE TABLE IF NOT EXISTS daemon_logs (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

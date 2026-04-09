@@ -541,6 +541,88 @@
   .board-empty svg { stroke: var(--text-tertiary); stroke-width: 1.5; }
   .board-empty p { font-size: 18px; font-weight: 600; color: var(--text-primary); }
 
+  /* ── Fix Modal ── */
+  .fix-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 500; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .fix-modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .fix-modal {
+    background: var(--bg-primary); border-radius: 14px;
+    width: 420px; max-width: 92vw; box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+  .fix-modal-header {
+    padding: 18px 22px 14px; border-bottom: 0.5px solid var(--border-light);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .fix-modal-title { font-size: 15px; font-weight: 600; }
+  .fix-modal-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+  .fix-modal-close {
+    width: 28px; height: 28px; border: none; background: var(--bg-secondary);
+    border-radius: 50%; cursor: pointer; font-size: 16px; color: var(--text-tertiary);
+    display: flex; align-items: center; justify-content: center; transition: background 0.12s;
+  }
+  .fix-modal-close:hover { background: var(--bg-tertiary); }
+
+  .fix-modal-body { padding: 18px 22px; }
+
+  .fix-upload-zone {
+    border: 1.5px dashed var(--border-mid); border-radius: var(--radius-md);
+    padding: 24px 16px; text-align: center; cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+    background: var(--bg-secondary); position: relative; overflow: hidden;
+  }
+  .fix-upload-zone:hover, .fix-upload-zone.dragover { background: var(--bg-tertiary); border-color: var(--green); }
+  .fix-upload-zone.has-image { padding: 0; border-style: solid; border-color: var(--green); cursor: default; }
+  .fix-upload-zone .upload-content { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .fix-upload-zone.has-image .upload-content { display: none; }
+  .fix-upload-text { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+  .fix-upload-hint { font-size: 11px; color: var(--text-tertiary); }
+  .fix-preview-img { width: 100%; max-height: 200px; object-fit: contain; display: none; border-radius: var(--radius-md); }
+  .fix-upload-zone.has-image .fix-preview-img { display: block; }
+  .fix-upload-remove {
+    display: none; position: absolute; top: 8px; right: 8px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(0,0,0,0.55); color: #fff; border: none;
+    cursor: pointer; align-items: center; justify-content: center;
+    font-size: 15px; z-index: 2;
+  }
+  .fix-upload-zone.has-image .fix-upload-remove { display: flex; }
+
+  .fix-message-field { margin-top: 14px; }
+  .fix-message-label { font-size: 11.5px; color: var(--text-tertiary); font-weight: 500; margin-bottom: 5px; }
+  .fix-message-input {
+    width: 100%; min-height: 64px; padding: 10px 12px; font-size: 13px;
+    font-family: var(--font); border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-md); background: var(--bg-secondary);
+    outline: none; resize: vertical; color: var(--text-primary); line-height: 1.5;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .fix-message-input:focus { border-color: var(--border-strong); background: var(--bg-primary); }
+  .fix-message-input::placeholder { color: var(--text-tertiary); }
+
+  .fix-modal-footer {
+    padding: 14px 22px 18px; display: flex; gap: 8px; justify-content: flex-end;
+  }
+  .fix-submit-btn {
+    padding: 9px 22px; font-size: 13px; font-weight: 600; font-family: var(--font);
+    background: var(--green); color: white; border: none; border-radius: var(--radius-md);
+    cursor: pointer; transition: opacity 0.12s;
+  }
+  .fix-submit-btn:hover:not(:disabled) { opacity: 0.85; }
+  .fix-submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .fix-cancel-btn {
+    padding: 9px 16px; font-size: 13px; font-weight: 500; font-family: var(--font);
+    background: var(--bg-secondary); color: var(--text-secondary);
+    border: 0.5px solid var(--border-light); border-radius: var(--radius-md);
+    cursor: pointer; transition: background 0.12s;
+  }
+  .fix-cancel-btn:hover { background: var(--bg-tertiary); }
+
   /* ── Move Sheet ── */
   .move-sheet-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.4);
@@ -822,6 +904,43 @@
       <tr><td><span>→</span></td><td>Move focused card forward</td></tr>
       <tr><td><span>?</span></td><td>Toggle this overlay</td></tr>
     </table>
+  </div>
+</div>
+
+<!-- Fix Modal -->
+<div class="fix-modal-overlay" id="fix-modal-overlay">
+  <div class="fix-modal">
+    <div class="fix-modal-header">
+      <div>
+        <div class="fix-modal-title">Mark as Fixed</div>
+        <div class="fix-modal-sub" id="fix-modal-bug-id"></div>
+      </div>
+      <button class="fix-modal-close" id="fix-modal-close">&times;</button>
+    </div>
+    <div class="fix-modal-body">
+      <div class="fix-upload-zone" id="fix-upload-zone">
+        <input type="file" id="fix-file-input" accept="image/*" style="display:none" />
+        <div class="upload-content">
+          <svg width="32" height="32" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.2" style="opacity:0.3">
+            <rect x="3" y="5" width="22" height="18" rx="3"/>
+            <circle cx="19" cy="11" r="2.2"/>
+            <path d="M3 20l6-5 4.5 4.5 3.5-3.5L22 20"/>
+          </svg>
+          <div class="fix-upload-text">Upload fix screenshot</div>
+          <div class="fix-upload-hint">Drop, paste, or click — show the fixed state</div>
+        </div>
+        <img class="fix-preview-img" id="fix-preview-img" src="" alt="">
+        <button class="fix-upload-remove" id="fix-upload-remove" type="button">&times;</button>
+      </div>
+      <div class="fix-message-field">
+        <div class="fix-message-label">Message (optional)</div>
+        <textarea class="fix-message-input" id="fix-message-input" placeholder="Quick note about what you fixed..."></textarea>
+      </div>
+    </div>
+    <div class="fix-modal-footer">
+      <button class="fix-cancel-btn" id="fix-modal-cancel">Cancel</button>
+      <button class="fix-submit-btn" id="fix-modal-submit">Mark as Fixed</button>
+    </div>
   </div>
 </div>
 
@@ -1407,6 +1526,131 @@
     }
   }
 
+  // ---- Fix Modal ----
+  const fixModalOverlay = document.getElementById('fix-modal-overlay');
+  const fixModalBugId   = document.getElementById('fix-modal-bug-id');
+  const fixModalClose   = document.getElementById('fix-modal-close');
+  const fixModalCancel  = document.getElementById('fix-modal-cancel');
+  const fixModalSubmit  = document.getElementById('fix-modal-submit');
+  const fixUploadZone   = document.getElementById('fix-upload-zone');
+  const fixFileInput    = document.getElementById('fix-file-input');
+  const fixPreviewImg   = document.getElementById('fix-preview-img');
+  const fixUploadRemove = document.getElementById('fix-upload-remove');
+  const fixMessageInput = document.getElementById('fix-message-input');
+
+  let fixModalBug       = null;
+  let fixScreenshotFile = null;
+  let fixScreenshotURL  = null;
+
+  function openFixModal(bug) {
+    fixModalBug       = bug;
+    fixScreenshotFile = null;
+    fixScreenshotURL  = null;
+    fixModalBugId.textContent = `${bug.bug_id} — ${bug.title}`;
+    fixMessageInput.value     = '';
+    fixPreviewImg.src         = '';
+    fixUploadZone.classList.remove('has-image');
+    fixModalSubmit.disabled   = false;
+    fixModalSubmit.textContent = 'Mark as Fixed';
+    fixModalOverlay.classList.add('open');
+  }
+
+  function closeFixModal() {
+    fixModalOverlay.classList.remove('open');
+    fixModalBug = null;
+  }
+
+  fixModalClose.addEventListener('click', closeFixModal);
+  fixModalCancel.addEventListener('click', closeFixModal);
+  fixModalOverlay.addEventListener('click', e => { if (e.target === fixModalOverlay) closeFixModal(); });
+
+  // Upload handlers
+  fixUploadZone.addEventListener('click', e => {
+    if (!e.target.closest('.fix-upload-remove') && !fixScreenshotURL) fixFileInput.click();
+  });
+  fixFileInput.addEventListener('change', () => { if (fixFileInput.files[0]) handleFixFile(fixFileInput.files[0]); });
+  fixUploadZone.addEventListener('dragover', e => { e.preventDefault(); fixUploadZone.classList.add('dragover'); });
+  fixUploadZone.addEventListener('dragleave', () => fixUploadZone.classList.remove('dragover'));
+  fixUploadZone.addEventListener('drop', e => { e.preventDefault(); fixUploadZone.classList.remove('dragover'); handleFixFile(e.dataTransfer.files[0]); });
+  fixUploadRemove.addEventListener('click', e => { e.stopPropagation(); clearFixScreenshot(); });
+
+  // Paste anywhere while modal is open
+  document.addEventListener('paste', e => {
+    if (!fixModalOverlay.classList.contains('open') || !e.clipboardData?.items) return;
+    for (const item of e.clipboardData.items) {
+      if (item.type.startsWith('image/')) { e.preventDefault(); handleFixFile(item.getAsFile()); break; }
+    }
+  });
+
+  function handleFixFile(file) {
+    if (!file?.type.startsWith('image/')) return;
+    fixScreenshotFile = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+      fixScreenshotURL = e.target.result;
+      fixPreviewImg.src = fixScreenshotURL;
+      fixUploadZone.classList.add('has-image');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearFixScreenshot() {
+    fixScreenshotFile = fixScreenshotURL = null;
+    fixFileInput.value = '';
+    fixPreviewImg.src  = '';
+    fixUploadZone.classList.remove('has-image');
+  }
+
+  // Submit fix
+  fixModalSubmit.addEventListener('click', async () => {
+    if (!fixModalBug) return;
+    fixModalSubmit.disabled = true;
+    fixModalSubmit.textContent = 'Saving...';
+
+    try {
+      const updates = {};
+
+      // Upload fix screenshot if provided
+      if (fixScreenshotFile) {
+        const fileName = `fixes/${Date.now()}_${fixScreenshotFile.name || 'fix.png'}`;
+        const { error: upErr } = await sb.storage.from('screenshots')
+          .upload(fileName, fixScreenshotFile, { contentType: fixScreenshotFile.type, upsert: false });
+        if (upErr) throw upErr;
+        const { data: urlData } = sb.storage.from('screenshots').getPublicUrl(fileName);
+        updates.fix_screenshot_url = urlData.publicUrl;
+      }
+
+      // Save optional message as fix_notes
+      const msg = fixMessageInput.value.trim();
+      if (msg) updates.fix_notes = msg;
+
+      // Apply extra fields if any
+      if (Object.keys(updates).length > 0) {
+        const { error } = await sb.from('bugs').update(updates).eq('id', fixModalBug.id);
+        if (error) {
+          // fix_screenshot_url column might not exist yet — try without it
+          if (error.message && error.message.includes('fix_screenshot_url')) {
+            delete updates.fix_screenshot_url;
+            if (Object.keys(updates).length > 0) {
+              await sb.from('bugs').update(updates).eq('id', fixModalBug.id);
+            }
+          }
+        }
+        // Update local bug object
+        Object.assign(fixModalBug, updates);
+      }
+
+      // Now move to Fixed
+      await moveBug(fixModalBug.id, 'Fixed');
+      closeFixModal();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || 'Failed to save fix', true);
+      fixModalSubmit.disabled = false;
+      fixModalSubmit.textContent = 'Mark as Fixed';
+    }
+  });
+
   // ---- Cycle Severity ----
   async function cycleSeverity(bugId) {
     const bug = bugs.find(b => b.id === bugId);
@@ -1555,6 +1799,8 @@
         const targetIdx  = ALL_STATUSES.indexOf(targetStatus);
         if (targetIdx < currentIdx) {
           showReopenPopover(btn, bug, targetStatus);
+        } else if (targetStatus === 'Fixed') {
+          openFixModal(bug);
         } else {
           await moveBug(bug.id, targetStatus);
         }
@@ -1673,7 +1919,9 @@
     moveSheetPills.querySelectorAll('.move-sheet-pill').forEach(p => {
       p.addEventListener('click', async () => {
         closeMoveSheet();
-        if (p.dataset.status !== bug.status) await moveBug(bug.id, p.dataset.status);
+        if (p.dataset.status === bug.status) return;
+        if (p.dataset.status === 'Fixed') { openFixModal(bug); return; }
+        await moveBug(bug.id, p.dataset.status);
       });
     });
 
@@ -1706,7 +1954,9 @@
       case 'n': case 'N':
         searchInput.focus(); e.preventDefault(); break;
       case 'Escape':
-        if (shortcutOverlay.classList.contains('open')) {
+        if (fixModalOverlay.classList.contains('open')) {
+          closeFixModal();
+        } else if (shortcutOverlay.classList.contains('open')) {
           shortcutOverlay.classList.remove('open');
         } else if (lightbox.classList.contains('show')) {
           lightbox.classList.remove('show');
