@@ -176,6 +176,7 @@ async function fixBug(bug) {
   } catch (err) {
     await logEvent(bug.bug_id, 'failed', `Git branch failed: ${err.message}`);
     await notify(`Fix failed: ${bug.bug_id}`, `${bug.title}\nBranch error: ${err.message.split('\n')[0]}`);
+    await sb.from('bugs').update({ status: 'Open' }).eq('id', bug.id);
     await cleanupBranch(branch);
     return false;
   }
@@ -198,27 +199,58 @@ async function fixBug(bug) {
   } catch (err) {
     await logEvent(bug.bug_id, 'failed', `Claude Code error: ${err.message.slice(0, 200)}`);
     await notify(`Fix failed: ${bug.bug_id}`, `${bug.title}\nClaude Code error: ${err.message.split('\n')[0]}`);
+    await sb.from('bugs').update({ status: 'Open' }).eq('id', bug.id);
     await cleanupBranch(branch);
     return false;
   }
 
-  // 4. Check if Claude made any changes
-  const diff = await git('diff', '--stat');
-  const staged = await git('diff', '--staged', '--stat');
-  if (!diff && !staged) {
-    await logEvent(bug.bug_id, 'failed', 'Claude made no changes');
+  // 4. Stage any unstaged changes Claude left behind
+  try { await git('add', '-A'); } catch (_) {}
+  const uncommitted = await git('diff', '--staged', '--stat');
+  if (uncommitted) {
+    try {
+      await git('commit', '-m', `fix(${getModuleInfo(bug.module).slug}): ${bug.title} [${bug.bug_id}]`);
+    } catch (_) {}
+  }
+
+  // 5. Check if branch has actual commits ahead of main
+  const commits = await git('log', 'main..HEAD', '--oneline');
+  if (!commits) {
+    await logEvent(bug.bug_id, 'failed', 'Claude made no changes (no commits ahead of main)');
     await notify(`Fix failed: ${bug.bug_id}`, `${bug.title}\nClaude made no changes — manual fix needed`);
+    await sb.from('bugs').update({ status: 'Open' }).eq('id', bug.id);
+    await cleanupBranch(branch);
+    return false;
+  }
+  await logEvent(bug.bug_id, 'changes_found', `${commits.split('\n').length} commit(s) on branch`);
+
+  // 6. Verify the build passes before pushing
+  await logEvent(bug.bug_id, 'verifying', 'Running build check...');
+  try {
+    await execFileAsync('npx', ['next', 'build'], {
+      cwd: ERP_DIR,
+      timeout: 5 * 60 * 1000, // 5 min build timeout
+      maxBuffer: 10 * 1024 * 1024,
+      env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
+    });
+    await logEvent(bug.bug_id, 'verified', 'Build passed');
+  } catch (err) {
+    const buildErr = (err.stderr || err.message || '').slice(-300);
+    await logEvent(bug.bug_id, 'failed', `Build failed: ${buildErr}`);
+    await notify(`Fix failed: ${bug.bug_id}`, `${bug.title}\nBuild failed — fix broke something`);
+    await sb.from('bugs').update({ status: 'Open' }).eq('id', bug.id);
     await cleanupBranch(branch);
     return false;
   }
 
-  // 5. Push branch
+  // 7. Push branch
   await logEvent(bug.bug_id, 'push', `Pushing branch ${branch}...`);
   try {
     await git('push', '-u', 'origin', branch);
   } catch (err) {
     await logEvent(bug.bug_id, 'failed', `Push failed: ${err.message.slice(0, 200)}`);
     await notify(`Fix failed: ${bug.bug_id}`, `${bug.title}\nPush failed: ${err.message.split('\n')[0]}`);
+    await sb.from('bugs').update({ status: 'Open' }).eq('id', bug.id);
     await cleanupBranch(branch);
     return false;
   }

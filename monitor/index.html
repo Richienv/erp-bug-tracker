@@ -74,6 +74,9 @@
     .ev-processing .log-badge { background: #3E3A1A; color: #FACC15; }
     .ev-claude_start .log-badge { background: #3E3A1A; color: #FACC15; }
     .ev-claude_done .log-badge { background: #1A2E1A; color: #4ADE80; }
+    .ev-changes_found .log-badge { background: #1A2E1A; color: #4ADE80; }
+    .ev-verifying  .log-badge { background: #2A1A3E; color: #C084FC; }
+    .ev-verified   .log-badge { background: #1A3E1A; color: #22C55E; }
     .ev-push       .log-badge { background: #3E3A1A; color: #FACC15; }
     .ev-pr_created .log-badge { background: #1A2E1A; color: #4ADE80; }
     .ev-done       .log-badge { background: #1A3E1A; color: #22C55E; }
@@ -276,7 +279,10 @@
         });
     }
 
-    loadRecent().then(subscribe);
+    loadRecent().then(subscribe).catch(err => {
+      console.error('Monitor init failed:', err);
+      emptyState.innerHTML = `<div style="color:#F87171">Error: ${err.message}</div>`;
+    });
   </script>
 </body>
 </html>
