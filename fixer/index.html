@@ -593,6 +593,18 @@
   }
   .fix-upload-zone.has-image .fix-upload-remove { display: flex; }
 
+  .fix-modal { position: relative; }
+  .fix-modal-dropover {
+    position: absolute; inset: 0; display: none;
+    align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--green) 18%, transparent);
+    border: 1.5px dashed var(--green); border-radius: inherit;
+    color: var(--green-text); font-size: 14px; font-weight: 600;
+    pointer-events: none; z-index: 10;
+    letter-spacing: 0.02em;
+  }
+  .fix-modal.dragging-over .fix-modal-dropover { display: flex; }
+
   .fix-message-field { margin-top: 14px; }
   .fix-message-label { font-size: 11.5px; color: var(--text-tertiary); font-weight: 500; margin-bottom: 5px; }
   .fix-message-input {
@@ -910,6 +922,7 @@
 <!-- Fix Modal -->
 <div class="fix-modal-overlay" id="fix-modal-overlay">
   <div class="fix-modal">
+      <div class="fix-modal-dropover">Drop to attach screenshot</div>
     <div class="fix-modal-header">
       <div>
         <div class="fix-modal-title">Mark as Fixed</div>
@@ -1573,6 +1586,28 @@
   fixUploadZone.addEventListener('dragleave', () => fixUploadZone.classList.remove('dragover'));
   fixUploadZone.addEventListener('drop', e => { e.preventDefault(); fixUploadZone.classList.remove('dragover'); handleFixFile(e.dataTransfer.files[0]); });
   fixUploadRemove.addEventListener('click', e => { e.stopPropagation(); clearFixScreenshot(); });
+
+  const fixModal = document.querySelector('.fix-modal');
+  let fixDragCounter = 0;
+  if (fixModal) {
+    fixModal.addEventListener('dragenter', e => {
+      if (!e.dataTransfer?.types?.includes('Files')) return;
+      fixDragCounter++;
+      fixModal.classList.add('dragging-over');
+    });
+    fixModal.addEventListener('dragover', e => { e.preventDefault(); });
+    fixModal.addEventListener('dragleave', () => {
+      fixDragCounter = Math.max(0, fixDragCounter - 1);
+      if (fixDragCounter === 0) fixModal.classList.remove('dragging-over');
+    });
+    fixModal.addEventListener('drop', e => {
+      e.preventDefault();
+      fixDragCounter = 0;
+      fixModal.classList.remove('dragging-over');
+      const file = e.dataTransfer?.files?.[0];
+      if (file) handleFixFile(file);
+    });
+  }
 
   // Paste anywhere while modal is open
   document.addEventListener('paste', e => {
