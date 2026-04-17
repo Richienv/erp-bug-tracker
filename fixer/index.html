@@ -1981,8 +1981,7 @@
     stepFixFile = null;
     stepFixURL = null;
     selectedBugId = null;
-    renderBoard();
-    renderList && renderList();
+    render(); // picks renderList or renderBoard based on viewMode
   }
 
   function stepRefresh() {
