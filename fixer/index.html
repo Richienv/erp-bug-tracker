@@ -593,6 +593,20 @@
   }
   .fix-upload-zone.has-image .fix-upload-remove { display: flex; }
 
+  .fix-upload-pills { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; justify-content: center; }
+  .fix-pill {
+    font-size: 10.5px; color: var(--text-tertiary);
+    padding: 2px 8px; border: 0.5px solid var(--border-light);
+    border-radius: 999px; background: var(--bg-secondary);
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .fix-pill kbd {
+    font: inherit; font-size: 9.5px; letter-spacing: 0.04em;
+    padding: 0 3px; background: var(--bg-primary);
+    border: 0.5px solid var(--border-light); border-radius: 3px;
+    color: var(--text-secondary);
+  }
+
   .fix-modal { position: relative; }
   .fix-modal-dropover {
     position: absolute; inset: 0; display: none;
@@ -958,7 +972,12 @@
             <path d="M3 20l6-5 4.5 4.5 3.5-3.5L22 20"/>
           </svg>
           <div class="fix-upload-text">Upload fix screenshot</div>
-          <div class="fix-upload-hint">Drop, paste, or click — show the fixed state</div>
+          <div class="fix-upload-hint">Show the fixed state</div>
+          <div class="fix-upload-pills">
+            <span class="fix-pill"><kbd>⇧</kbd> Drop</span>
+            <span class="fix-pill"><kbd>⌘V</kbd> Paste</span>
+            <span class="fix-pill"><kbd>⬆</kbd> Browse</span>
+          </div>
         </div>
         <img class="fix-preview-img" id="fix-preview-img" src="" alt="">
         <button class="fix-upload-remove" id="fix-upload-remove" type="button">&times;</button>
