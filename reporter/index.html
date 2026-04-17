@@ -2095,7 +2095,40 @@
     pendingVerifies.delete(String(id));
   }
 
-  function handleReopenInbox(id, note) { /* Task 6 */ }
+  async function handleReopenInbox(id, note) {
+    const bug = allBugs.find(b => String(b.id) === String(id));
+    if (!bug) return;
+
+    const prev = { status: bug.status, fix_notes: bug.fix_notes, fix_screenshot_url: bug.fix_screenshot_url };
+
+    const card = verifyInboxEl.querySelector(`.vi-card[data-vi-id="${id}"]`);
+    if (card) card.classList.add('verifying');
+    bug.status = 'Open';
+    bug.fix_notes = null;
+    setTimeout(() => renderVerifyInbox(), 220);
+
+    let undone = false;
+    const cancelToast = showUndoToast(note ? 'Reopened with note' : 'Reopened', () => {
+      undone = true;
+      Object.assign(bug, prev);
+      renderBugs();
+    });
+
+    const updates = { status: 'Open', fix_notes: null };
+    if (note) updates.fix_notes = `REOPEN NOTE: ${note}`;
+
+    const { error } = await sb.from('bugs').update(updates).eq('id', id);
+    if (error) {
+      Object.assign(bug, prev);
+      cancelToast();
+      renderBugs();
+      showToast('Couldn\'t reopen — try again', true);
+      return;
+    }
+    if (undone) {
+      await sb.from('bugs').update({ status: prev.status, fix_notes: prev.fix_notes }).eq('id', id);
+    }
+  }
 
   /* ---- List View ---- */
   function renderListView(bugs, meta, newId) {
