@@ -2055,7 +2055,46 @@
   }
 
   // stubs — filled in next tasks
-  function handleVerifyInbox(id) { /* Task 5 */ }
+  const pendingVerifies = new Map(); // id -> previous status
+
+  async function handleVerifyInbox(id) {
+    const bug = allBugs.find(b => String(b.id) === String(id));
+    if (!bug) return;
+
+    // Optimistic: animate card out and mutate local status
+    const card = verifyInboxEl.querySelector(`.vi-card[data-vi-id="${id}"]`);
+    if (card) card.classList.add('verifying');
+    pendingVerifies.set(String(id), bug.status);
+    bug.status = 'Verified';
+
+    // Re-render after the CSS transition so height collapses cleanly
+    setTimeout(() => renderVerifyInbox(), 220);
+
+    let undone = false;
+    const cancelToast = showUndoToast('Verified', () => {
+      undone = true;
+      bug.status = pendingVerifies.get(String(id)) || 'Fixed';
+      pendingVerifies.delete(String(id));
+      renderBugs();
+    });
+
+    const { error } = await sb.from('bugs').update({ status: 'Verified' }).eq('id', id);
+    if (error) {
+      bug.status = pendingVerifies.get(String(id)) || 'Fixed';
+      pendingVerifies.delete(String(id));
+      cancelToast();
+      renderBugs();
+      showToast('Couldn\'t verify — try again', true);
+      return;
+    }
+
+    if (undone) {
+      // Reverse the DB update to match the optimistic reversal the user chose
+      await sb.from('bugs').update({ status: pendingVerifies.get(String(id)) || 'Fixed' }).eq('id', id);
+    }
+    pendingVerifies.delete(String(id));
+  }
+
   function handleReopenInbox(id, note) { /* Task 6 */ }
 
   /* ---- List View ---- */
