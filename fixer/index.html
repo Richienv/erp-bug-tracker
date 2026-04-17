@@ -663,6 +663,189 @@
   }
   .fix-cancel-btn:hover { background: var(--bg-tertiary); }
 
+  /* ── Step Modal ── */
+  .step-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 450; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .step-modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .step-modal {
+    background: var(--bg-primary); border-radius: 14px;
+    width: 560px; max-width: 92vw; max-height: 90vh; overflow: hidden;
+    box-shadow: var(--shadow-lg); display: flex; flex-direction: column;
+    position: relative;
+  }
+  .step-modal-header {
+    padding: 14px 18px 12px; border-bottom: 0.5px solid var(--border-light);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .step-modal-id {
+    font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em;
+    color: var(--text-tertiary); text-transform: uppercase;
+  }
+  .step-modal-head-actions { display: flex; align-items: center; gap: 4px; }
+  .step-modal-icon-btn {
+    width: 28px; height: 28px; border: 0; background: transparent;
+    border-radius: 7px; cursor: pointer; color: var(--text-secondary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; transition: background 0.12s;
+  }
+  .step-modal-icon-btn:hover { background: var(--bg-secondary); }
+
+  .step-kebab-menu {
+    position: absolute; top: 48px; right: 14px;
+    min-width: 180px; padding: 5px; border-radius: 9px;
+    background: var(--bg-primary); border: 0.5px solid var(--border-light);
+    box-shadow: var(--shadow-lg); z-index: 2; display: none;
+  }
+  .step-kebab-menu.open { display: block; }
+  .step-kebab-item {
+    width: 100%; padding: 8px 10px; border: 0; background: transparent;
+    text-align: left; font: inherit; font-size: 13px; color: var(--text-primary);
+    border-radius: 6px; cursor: pointer; display: block;
+  }
+  .step-kebab-item:hover { background: var(--bg-secondary); }
+  .step-kebab-item.danger { color: var(--red); }
+  .step-kebab-item.danger:hover { background: color-mix(in srgb, var(--red) 10%, transparent); }
+  .step-kebab-sep { height: 0.5px; background: var(--border-light); margin: 4px 2px; }
+
+  .step-modal-body { padding: 16px 20px 20px; overflow-y: auto; }
+
+  .step-ctx-title { font-size: 17px; font-weight: 600; line-height: 1.35; margin-bottom: 6px; }
+  .step-ctx-meta {
+    display: flex; flex-wrap: wrap; gap: 5px 10px;
+    font-size: 11.5px; color: var(--text-tertiary); margin-bottom: 12px;
+    align-items: center;
+  }
+  .step-ctx-meta .pill {
+    padding: 2px 8px; border-radius: 999px;
+    background: var(--bg-secondary); color: var(--text-secondary);
+    border: 0.5px solid var(--border-light); font-weight: 500;
+  }
+  .step-ctx-screenshot {
+    width: 100%; max-height: 220px; object-fit: cover;
+    border-radius: 8px; border: 0.5px solid var(--border-light);
+    cursor: zoom-in; display: block; margin-bottom: 10px;
+  }
+  .step-ctx-notes {
+    font-size: 13px; line-height: 1.55; color: var(--text-secondary);
+    padding: 10px 12px; border-left: 2px solid var(--border-mid);
+    background: var(--bg-secondary); border-radius: 0 6px 6px 0;
+    white-space: pre-wrap; margin-bottom: 14px;
+  }
+
+  .step-action-card {
+    border-top: 0.5px solid var(--border-light); padding-top: 14px; margin-top: 4px;
+  }
+  .step-action-label {
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px;
+  }
+  .step-action-caption { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 12px; }
+
+  .step-primary-btn {
+    width: 100%; padding: 12px 18px; font-size: 14px; font-weight: 600;
+    background: var(--green); color: #fff; border: 0; border-radius: 10px;
+    cursor: pointer; font-family: var(--font); transition: opacity 0.12s;
+  }
+  .step-primary-btn:hover:not(:disabled) { opacity: 0.9; }
+  .step-primary-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .step-primary-btn.neutral { background: var(--text-primary); }
+
+  .step-waiting {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 14px; border-radius: 10px;
+    background: var(--bg-secondary); border: 0.5px solid var(--border-light);
+  }
+  .step-waiting-dot {
+    flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--blue); margin-top: 6px;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--blue) 20%, transparent);
+  }
+  .step-waiting-dot.green { background: var(--green); box-shadow: 0 0 0 4px color-mix(in srgb, var(--green) 20%, transparent); }
+  .step-waiting-dot.grey { background: var(--text-tertiary); box-shadow: none; }
+  .step-waiting-body { flex: 1; }
+  .step-waiting-title { font-size: 13.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+  .step-waiting-sub { font-size: 12px; color: var(--text-tertiary); }
+
+  .step-fix-thumbs {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;
+  }
+  .step-fix-thumbs figure { margin: 0; }
+  .step-fix-thumbs figcaption {
+    font-size: 10.5px; color: var(--text-tertiary); margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+  }
+  .step-fix-thumbs img {
+    width: 100%; aspect-ratio: 16/10; object-fit: cover;
+    border-radius: 6px; border: 0.5px solid var(--border-light);
+    cursor: zoom-in; display: block;
+  }
+
+  /* Embedded fix form */
+  .step-fix-dropzone {
+    border: 1.5px dashed var(--border-mid); border-radius: 10px;
+    padding: 20px 14px; text-align: center; cursor: pointer;
+    background: var(--bg-secondary); position: relative;
+    transition: background 0.12s, border-color 0.12s; margin-bottom: 12px;
+  }
+  .step-fix-dropzone:hover, .step-fix-dropzone.dragover {
+    background: var(--bg-tertiary); border-color: var(--green);
+  }
+  .step-fix-dropzone.has-image { padding: 0; border-style: solid; border-color: var(--green); cursor: default; overflow: hidden; }
+  .step-fix-dropzone .zone-content { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .step-fix-dropzone.has-image .zone-content { display: none; }
+  .step-fix-dropzone .zone-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+  .step-fix-dropzone .zone-hint { font-size: 11px; color: var(--text-tertiary); }
+  .step-fix-dropzone .zone-pills { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; justify-content: center; }
+  .step-fix-dropzone .fix-pill { font-size: 10px; }
+  .step-fix-preview {
+    width: 100%; max-height: 200px; object-fit: contain; display: none;
+    border-radius: 8px; background: var(--bg-tertiary);
+  }
+  .step-fix-dropzone.has-image .step-fix-preview { display: block; }
+  .step-fix-remove {
+    display: none; position: absolute; top: 8px; right: 8px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(0,0,0,0.55); color: #fff; border: none;
+    cursor: pointer; align-items: center; justify-content: center;
+    font-size: 15px; z-index: 2;
+  }
+  .step-fix-dropzone.has-image .step-fix-remove { display: flex; }
+  .step-fix-notes {
+    width: 100%; min-height: 70px; padding: 10px 12px; font-size: 13px;
+    font-family: var(--font); border: 0.5px solid var(--border-light);
+    border-radius: 8px; background: var(--bg-secondary); outline: none;
+    resize: vertical; color: var(--text-primary); line-height: 1.5;
+    transition: border-color 0.12s, background 0.12s; margin-bottom: 12px;
+  }
+  .step-fix-notes:focus { border-color: var(--border-strong); background: var(--bg-primary); }
+  .step-fix-notes::placeholder { color: var(--text-tertiary); }
+
+  .step-modal-dropover {
+    position: absolute; inset: 0; display: none;
+    align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--green) 18%, transparent);
+    border: 1.5px dashed var(--green); border-radius: inherit;
+    color: var(--green-text); font-size: 14px; font-weight: 600;
+    pointer-events: none; z-index: 10; letter-spacing: 0.02em;
+  }
+  .step-modal.dragging-over .step-modal-dropover { display: flex; }
+
+  .step-modal .fix-clip-banner { margin-bottom: 10px; }
+
+  /* Hide legacy detail panel — step modal replaces it */
+  .detail-panel { display: none !important; }
+
+  @media (max-width: 640px) {
+    .step-modal { width: 100%; max-width: 100%; height: 100%; max-height: 100%; border-radius: 0; }
+    .step-fix-thumbs { grid-template-columns: 1fr; }
+  }
+
   /* ── Move Sheet ── */
   .move-sheet-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.4);
@@ -991,6 +1174,29 @@
       <button class="fix-cancel-btn" id="fix-modal-cancel">Cancel</button>
       <button class="fix-submit-btn" id="fix-modal-submit">Mark as Fixed</button>
     </div>
+  </div>
+</div>
+
+<!-- Step Modal — one-at-a-time status walkthrough -->
+<div class="step-modal-overlay" id="step-modal-overlay">
+  <div class="step-modal" id="step-modal" role="dialog" aria-modal="true" aria-labelledby="step-modal-id">
+    <div class="step-modal-dropover">Drop to attach fix screenshot</div>
+    <div class="step-modal-header">
+      <div class="step-modal-id" id="step-modal-id"></div>
+      <div class="step-modal-head-actions">
+        <button class="step-modal-icon-btn" id="step-kebab-btn" title="More actions" aria-label="More actions">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="13" cy="8" r="1.5"/></svg>
+        </button>
+        <button class="step-modal-icon-btn" id="step-modal-close" title="Close (Esc)" aria-label="Close">&times;</button>
+      </div>
+    </div>
+    <div class="step-kebab-menu" id="step-kebab-menu">
+      <button class="step-kebab-item" data-kebab="edit-notes">Edit fix notes</button>
+      <button class="step-kebab-item" data-kebab="revert">Revert to previous status</button>
+      <div class="step-kebab-sep"></div>
+      <button class="step-kebab-item danger" data-kebab="delete">Delete bug</button>
+    </div>
+    <div class="step-modal-body" id="step-modal-body"></div>
   </div>
 </div>
 
@@ -1330,7 +1536,7 @@
       tr.cells[6].appendChild(createCopyButton(bug));
       tr.addEventListener('click', e => {
         if (e.target.closest('.copy-btn-wrap')) return;
-        openDetail(bug.id);
+        openStepModal(bug.id);
         renderList(); // refresh selection highlight
       });
       tbody.appendChild(tr);
@@ -1518,7 +1724,7 @@
     // Events
     card.addEventListener('click', e => {
       if (e.target.closest('.copy-btn-wrap')) return;
-      openDetail(bug.id);
+      openStepModal(bug.id);
     });
 
     // Desktop drag
@@ -1740,6 +1946,400 @@
       showToast(err.message || 'Failed to save fix', true);
       fixModalSubmit.disabled = false;
       fixModalSubmit.textContent = 'Mark as Fixed';
+    }
+  });
+
+  // ---- Step Modal ----
+  const stepOverlay   = document.getElementById('step-modal-overlay');
+  const stepModalEl   = document.getElementById('step-modal');
+  const stepBody      = document.getElementById('step-modal-body');
+  const stepIdEl      = document.getElementById('step-modal-id');
+  const stepCloseBtn  = document.getElementById('step-modal-close');
+  const stepKebabBtn  = document.getElementById('step-kebab-btn');
+  const stepKebabMenu = document.getElementById('step-kebab-menu');
+
+  let stepBugId = null;
+  let stepFixFile = null;
+  let stepFixURL = null;
+  let stepDragCounter = 0;
+
+  function openStepModal(bugId) {
+    const bug = bugs.find(b => b.id === bugId);
+    if (!bug) return;
+    stepBugId = bugId;
+    stepFixFile = null;
+    stepFixURL = null;
+    selectedBugId = bugId; // keep selection highlighting in sync with list/kanban
+    renderStepBody(bug);
+    stepOverlay.classList.add('open');
+  }
+
+  function closeStepModal() {
+    stepOverlay.classList.remove('open');
+    stepKebabMenu.classList.remove('open');
+    stepBugId = null;
+    stepFixFile = null;
+    stepFixURL = null;
+    selectedBugId = null;
+    renderBoard();
+    renderList && renderList();
+  }
+
+  function stepRefresh() {
+    if (!stepBugId) return;
+    const bug = bugs.find(b => b.id === stepBugId);
+    if (!bug) { closeStepModal(); return; }
+    renderStepBody(bug);
+  }
+
+  stepCloseBtn.addEventListener('click', closeStepModal);
+  stepOverlay.addEventListener('click', e => { if (e.target === stepOverlay) closeStepModal(); });
+
+  // Kebab toggle
+  stepKebabBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    stepKebabMenu.classList.toggle('open');
+  });
+  document.addEventListener('click', e => {
+    if (stepKebabMenu.classList.contains('open') && !stepKebabMenu.contains(e.target) && e.target !== stepKebabBtn) {
+      stepKebabMenu.classList.remove('open');
+    }
+  });
+  stepKebabMenu.addEventListener('click', async e => {
+    const btn = e.target.closest('[data-kebab]');
+    if (!btn) return;
+    stepKebabMenu.classList.remove('open');
+    const bug = bugs.find(b => b.id === stepBugId);
+    if (!bug) return;
+
+    if (btn.dataset.kebab === 'edit-notes') {
+      const next = prompt('Edit fix notes:', bug.fix_notes || '');
+      if (next === null) return;
+      bug.fix_notes = next.trim() || null;
+      const { error } = await sb.from('bugs').update({ fix_notes: bug.fix_notes }).eq('id', bug.id);
+      if (error) { showToast('Failed to save notes', true); return; }
+      showToast('Notes updated');
+      stepRefresh();
+    } else if (btn.dataset.kebab === 'revert') {
+      const idx = ALL_STATUSES.indexOf(bug.status);
+      if (idx <= 0) { showToast('Already at first step'); return; }
+      const prev = ALL_STATUSES[idx - 1];
+      if (!confirm(`Revert ${bug.bug_id} back to "${prev}"?`)) return;
+      await moveBug(bug.id, prev);
+      stepRefresh();
+    } else if (btn.dataset.kebab === 'delete') {
+      if (!confirm(`Delete ${bug.bug_id}? This can't be undone.`)) return;
+      const { error } = await sb.from('bugs').delete().eq('id', bug.id);
+      if (error) { showToast('Failed to delete', true); return; }
+      bugs = bugs.filter(b => b.id !== bug.id);
+      showToast('Bug deleted');
+      closeStepModal();
+      renderBoard();
+      renderSidebarCounts();
+    }
+  });
+
+  function renderStepBody(bug) {
+    const createdDate = timeAgo(bug.created_at);
+    const resolvedAgo = bug.resolved_at ? timeAgo(bug.resolved_at) : null;
+    const sev = bug.severity || 'Medium';
+
+    stepIdEl.textContent = bug.bug_id;
+
+    const screenshotHtml = bug.screenshot_url ? `
+      <img class="step-ctx-screenshot" id="step-ctx-img" src="${esc(bug.screenshot_url)}" alt="Reporter screenshot">
+    ` : '';
+    const notesHtml = bug.notes ? `<div class="step-ctx-notes">${esc(bug.notes)}</div>` : '';
+
+    const header = `
+      <div class="step-ctx-title">${esc(bug.title)}</div>
+      <div class="step-ctx-meta">
+        <span class="pill">${esc(bug.reporter || '—')}</span>
+        <span class="pill">${esc(bug.module || '—')}</span>
+        <span class="pill">${esc(sev)}</span>
+        <span>${createdDate}</span>
+      </div>
+      ${screenshotHtml}
+      ${notesHtml}
+    `;
+
+    let action = '';
+    if (bug.status === 'Open') {
+      action = `
+        <div class="step-action-card">
+          <div class="step-action-label">Next step</div>
+          <div class="step-action-caption">Ready to work on this bug?</div>
+          <button class="step-primary-btn" id="step-start-btn">Start working — move to In Progress</button>
+        </div>
+      `;
+    } else if (bug.status === 'In Progress') {
+      action = `
+        <div class="step-action-card">
+          <div class="step-action-label">Submit your fix</div>
+          <div class="fix-clip-banner" id="step-clip-banner">
+            <span>📋 Screenshot on clipboard</span>
+            <button type="button" id="step-clip-paste">Paste</button>
+          </div>
+          <div class="step-fix-dropzone" id="step-fix-zone">
+            <input type="file" id="step-fix-input" accept="image/*" style="display:none">
+            <div class="zone-content">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.2" style="opacity:0.3">
+                <rect x="3" y="5" width="22" height="18" rx="3"/>
+                <circle cx="19" cy="11" r="2.2"/>
+                <path d="M3 20l6-5 4.5 4.5 3.5-3.5L22 20"/>
+              </svg>
+              <div class="zone-title">Upload fix screenshot</div>
+              <div class="zone-hint">Show the fixed state</div>
+              <div class="zone-pills">
+                <span class="fix-pill"><kbd>⇧</kbd> Drop</span>
+                <span class="fix-pill"><kbd>⌘V</kbd> Paste</span>
+                <span class="fix-pill"><kbd>⬆</kbd> Browse</span>
+              </div>
+            </div>
+            <img class="step-fix-preview" id="step-fix-preview" src="" alt="">
+            <button class="step-fix-remove" id="step-fix-remove" type="button">&times;</button>
+          </div>
+          <textarea class="step-fix-notes" id="step-fix-notes" placeholder="What did you change? File, function, what...">${esc(bug.fix_notes || '')}</textarea>
+          <button class="step-primary-btn" id="step-submit-btn">Submit fix — move to Fixed</button>
+        </div>
+      `;
+    } else if (bug.status === 'Fixed') {
+      const thumbs = `
+        <div class="step-fix-thumbs">
+          ${bug.screenshot_url ? `<figure><figcaption>Before</figcaption><img class="step-ctx-thumb" data-src="${esc(bug.screenshot_url)}" src="${esc(bug.screenshot_url)}" alt="Before"></figure>` : ''}
+          ${bug.fix_screenshot_url ? `<figure><figcaption>After</figcaption><img class="step-ctx-thumb" data-src="${esc(bug.fix_screenshot_url)}" src="${esc(bug.fix_screenshot_url)}" alt="After"></figure>` : ''}
+        </div>
+      `;
+      const fixNotes = bug.fix_notes ? `<div class="step-ctx-notes" style="margin-top:10px">${esc(bug.fix_notes)}</div>` : '';
+      action = `
+        <div class="step-action-card">
+          <div class="step-action-label">Status</div>
+          <div class="step-waiting">
+            <div class="step-waiting-dot"></div>
+            <div class="step-waiting-body">
+              <div class="step-waiting-title">Waiting for ${esc(bug.reporter || 'reporter')} to verify</div>
+              <div class="step-waiting-sub">Submitted ${resolvedAgo || createdDate}</div>
+            </div>
+          </div>
+          ${thumbs}
+          ${fixNotes}
+        </div>
+      `;
+    } else if (bug.status === 'Verified') {
+      const fixNotes = bug.fix_notes ? `<div class="step-ctx-notes" style="margin-top:10px">${esc(bug.fix_notes)}</div>` : '';
+      action = `
+        <div class="step-action-card">
+          <div class="step-action-label">Status</div>
+          <div class="step-waiting">
+            <div class="step-waiting-dot green"></div>
+            <div class="step-waiting-body">
+              <div class="step-waiting-title">Verified${bug.verified_by ? ' by ' + esc(bug.verified_by) : ''}</div>
+              <div class="step-waiting-sub">${resolvedAgo ? resolvedAgo : 'just now'} · fixer has nothing more to do here</div>
+            </div>
+          </div>
+          ${fixNotes}
+        </div>
+      `;
+    } else { // Closed
+      action = `
+        <div class="step-action-card">
+          <div class="step-action-label">Status</div>
+          <div class="step-waiting">
+            <div class="step-waiting-dot grey"></div>
+            <div class="step-waiting-body">
+              <div class="step-waiting-title">Closed</div>
+              <div class="step-waiting-sub">${resolvedAgo ? resolvedAgo : ''}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    stepBody.innerHTML = header + action;
+    bindStepBodyEvents(bug);
+  }
+
+  function bindStepBodyEvents(bug) {
+    const ctxImg = document.getElementById('step-ctx-img');
+    if (ctxImg) ctxImg.addEventListener('click', () => {
+      lightboxImg.src = bug.screenshot_url;
+      lightbox.classList.add('show');
+    });
+    stepBody.querySelectorAll('.step-ctx-thumb').forEach(img => {
+      img.addEventListener('click', () => {
+        lightboxImg.src = img.dataset.src;
+        lightbox.classList.add('show');
+      });
+    });
+
+    if (bug.status === 'Open') {
+      const btn = document.getElementById('step-start-btn');
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        btn.textContent = 'Starting...';
+        await moveBug(bug.id, 'In Progress');
+        stepRefresh();
+      });
+    } else if (bug.status === 'In Progress') {
+      const zone     = document.getElementById('step-fix-zone');
+      const input    = document.getElementById('step-fix-input');
+      const preview  = document.getElementById('step-fix-preview');
+      const removeBtn= document.getElementById('step-fix-remove');
+      const submitBtn= document.getElementById('step-submit-btn');
+
+      function applyFile(file) {
+        if (!file?.type?.startsWith('image/')) return;
+        stepFixFile = file;
+        const reader = new FileReader();
+        reader.onload = e => {
+          stepFixURL = e.target.result;
+          preview.src = stepFixURL;
+          zone.classList.add('has-image');
+        };
+        reader.readAsDataURL(file);
+      }
+
+      zone.addEventListener('click', e => {
+        if (e.target.closest('#step-fix-remove')) return;
+        if (!stepFixURL) input.click();
+      });
+      input.addEventListener('change', () => { if (input.files[0]) applyFile(input.files[0]); });
+      zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+      zone.addEventListener('drop', e => {
+        e.preventDefault(); e.stopPropagation();
+        zone.classList.remove('dragover');
+        if (e.dataTransfer?.files?.[0]) applyFile(e.dataTransfer.files[0]);
+      });
+      removeBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        stepFixFile = null; stepFixURL = null;
+        preview.src = ''; zone.classList.remove('has-image');
+      });
+
+      // Clipboard banner
+      (async () => {
+        const banner = document.getElementById('step-clip-banner');
+        const pasteBtn = document.getElementById('step-clip-paste');
+        if (!banner || !pasteBtn) return;
+        banner.classList.remove('show');
+        if (!(navigator.clipboard?.read && window.isSecureContext)) return;
+        try {
+          const items = await navigator.clipboard.read();
+          const first = items.find(i => i.types.some(t => t.startsWith('image/')));
+          if (!first) return;
+          const mime = first.types.find(t => t.startsWith('image/'));
+          banner.classList.add('show');
+          pasteBtn.onclick = async () => {
+            try {
+              const blob = await first.getType(mime);
+              const file = new File([blob], `clipboard-${Date.now()}.png`, { type: mime });
+              applyFile(file);
+              banner.classList.remove('show');
+            } catch {
+              banner.classList.remove('show');
+              showToast('Paste failed', true);
+            }
+          };
+        } catch { /* permission denied — silent */ }
+      })();
+
+      submitBtn.addEventListener('click', async () => {
+        const notesEl = document.getElementById('step-fix-notes');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+        try {
+          const updates = {};
+          if (stepFixFile) {
+            const fileName = `fixes/${Date.now()}_${stepFixFile.name || 'fix.png'}`;
+            const { error: upErr } = await sb.storage.from('screenshots')
+              .upload(fileName, stepFixFile, { contentType: stepFixFile.type, upsert: false });
+            if (upErr) throw upErr;
+            const { data: urlData } = sb.storage.from('screenshots').getPublicUrl(fileName);
+            updates.fix_screenshot_url = urlData.publicUrl;
+          }
+          const noteVal = (notesEl?.value || '').trim();
+          if (noteVal) updates.fix_notes = noteVal;
+
+          if (Object.keys(updates).length > 0) {
+            const { error } = await sb.from('bugs').update(updates).eq('id', bug.id);
+            if (error) {
+              if (error.message && error.message.includes('fix_screenshot_url')) {
+                delete updates.fix_screenshot_url;
+                if (Object.keys(updates).length > 0) {
+                  await sb.from('bugs').update(updates).eq('id', bug.id);
+                }
+              } else {
+                throw error;
+              }
+            }
+            Object.assign(bug, updates);
+          }
+
+          await moveBug(bug.id, 'Fixed');
+          stepRefresh();
+        } catch (err) {
+          console.error(err);
+          showToast(err.message || 'Failed to save fix', true);
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit fix — move to Fixed';
+        }
+      });
+    }
+  }
+
+  // Modal-wide drop target (In Progress only; harmless otherwise)
+  stepModalEl.addEventListener('dragenter', e => {
+    stepDragCounter++;
+    if (e.dataTransfer?.types?.includes('Files')) stepModalEl.classList.add('dragging-over');
+  });
+  stepModalEl.addEventListener('dragover', e => { e.preventDefault(); });
+  stepModalEl.addEventListener('dragleave', () => {
+    stepDragCounter = Math.max(0, stepDragCounter - 1);
+    if (stepDragCounter === 0) stepModalEl.classList.remove('dragging-over');
+  });
+  stepModalEl.addEventListener('drop', e => {
+    e.preventDefault();
+    stepDragCounter = 0;
+    stepModalEl.classList.remove('dragging-over');
+    const file = e.dataTransfer?.files?.[0];
+    const zone = document.getElementById('step-fix-zone');
+    if (file && zone) {
+      // Delegate into zone's applyFile via synthetic read
+      const reader = new FileReader();
+      reader.onload = ev => {
+        stepFixFile = file;
+        stepFixURL = ev.target.result;
+        const preview = document.getElementById('step-fix-preview');
+        if (preview) { preview.src = stepFixURL; zone.classList.add('has-image'); }
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // Paste anywhere while step modal is open (In Progress)
+  document.addEventListener('paste', e => {
+    if (!stepOverlay.classList.contains('open')) return;
+    const bug = bugs.find(b => b.id === stepBugId);
+    if (!bug || bug.status !== 'In Progress') return;
+    if (!e.clipboardData?.items) return;
+    for (const item of e.clipboardData.items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        const zone = document.getElementById('step-fix-zone');
+        const preview = document.getElementById('step-fix-preview');
+        if (!zone || !preview) return;
+        stepFixFile = file;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          stepFixURL = ev.target.result;
+          preview.src = stepFixURL;
+          zone.classList.add('has-image');
+        };
+        reader.readAsDataURL(file);
+        break;
+      }
     }
   });
 
@@ -2048,14 +2648,14 @@
       case 'Escape':
         if (fixModalOverlay.classList.contains('open')) {
           closeFixModal();
+        } else if (stepOverlay.classList.contains('open')) {
+          closeStepModal();
         } else if (shortcutOverlay.classList.contains('open')) {
           shortcutOverlay.classList.remove('open');
         } else if (lightbox.classList.contains('show')) {
           lightbox.classList.remove('show');
         } else if (moveSheet.classList.contains('open')) {
           closeMoveSheet();
-        } else {
-          closeDetailPanel();
         }
         break;
       case '1': filterToStatus('Open'); break;
@@ -2118,7 +2718,7 @@
 
   function openFocusedCard() {
     const focused = kanban.querySelector('.bug-card.focused');
-    if (focused) openDetail(focused.dataset.id);
+    if (focused) openStepModal(focused.dataset.id);
   }
 
   function moveFocusedCardForward() {
@@ -2161,12 +2761,12 @@
         }
         renderBoard();
         renderSidebarCounts();
-        if (selectedBugId === updated.id && !isTypingFixNotes) renderDetail(updated);
+        if (stepBugId === updated.id && !isTypingFixNotes) stepRefresh();
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'bugs' }, payload => {
         const deletedId = payload.old.id;
         bugs = bugs.filter(b => b.id !== deletedId);
-        if (selectedBugId === deletedId) closeDetailPanel();
+        if (stepBugId === deletedId) closeStepModal();
         renderBoard();
         renderSidebarCounts();
       })
