@@ -1622,7 +1622,7 @@
   fixFileInput.addEventListener('change', () => { if (fixFileInput.files[0]) handleFixFile(fixFileInput.files[0]); });
   fixUploadZone.addEventListener('dragover', e => { e.preventDefault(); fixUploadZone.classList.add('dragover'); });
   fixUploadZone.addEventListener('dragleave', () => fixUploadZone.classList.remove('dragover'));
-  fixUploadZone.addEventListener('drop', e => { e.preventDefault(); fixUploadZone.classList.remove('dragover'); handleFixFile(e.dataTransfer.files[0]); });
+  fixUploadZone.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); fixUploadZone.classList.remove('dragover'); handleFixFile(e.dataTransfer.files[0]); });
   fixUploadRemove.addEventListener('click', e => { e.stopPropagation(); clearFixScreenshot(); });
 
   const fixModal = document.querySelector('.fix-modal');
