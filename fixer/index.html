@@ -605,6 +605,20 @@
   }
   .fix-modal.dragging-over .fix-modal-dropover { display: flex; }
 
+  .fix-clip-banner {
+    display: none; align-items: center; justify-content: space-between;
+    gap: 10px; margin-bottom: 10px;
+    padding: 8px 12px; border-radius: 6px;
+    background: color-mix(in srgb, var(--blue) 10%, transparent);
+    border: 0.5px solid color-mix(in srgb, var(--blue) 40%, transparent);
+    color: var(--blue-text); font-size: 12.5px;
+  }
+  .fix-clip-banner.show { display: flex; }
+  .fix-clip-banner button {
+    background: var(--blue); color: #fff; border: 0; cursor: pointer;
+    padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 500;
+  }
+
   .fix-message-field { margin-top: 14px; }
   .fix-message-label { font-size: 11.5px; color: var(--text-tertiary); font-weight: 500; margin-bottom: 5px; }
   .fix-message-input {
@@ -931,6 +945,10 @@
       <button class="fix-modal-close" id="fix-modal-close">&times;</button>
     </div>
     <div class="fix-modal-body">
+      <div class="fix-clip-banner" id="fix-clip-banner">
+        <span>📋 Screenshot on clipboard</span>
+        <button type="button" id="fix-clip-paste">Paste</button>
+      </div>
       <div class="fix-upload-zone" id="fix-upload-zone">
         <input type="file" id="fix-file-input" accept="image/*" style="display:none" />
         <div class="upload-content">
@@ -1566,6 +1584,7 @@
     fixModalSubmit.disabled   = false;
     fixModalSubmit.textContent = 'Mark as Fixed';
     fixModalOverlay.classList.add('open');
+    maybeShowClipboardBanner();
   }
 
   function closeFixModal() {
@@ -1616,6 +1635,26 @@
       if (item.type.startsWith('image/')) { e.preventDefault(); handleFixFile(item.getAsFile()); break; }
     }
   });
+
+  async function maybeShowClipboardBanner() {
+    const banner = document.getElementById('fix-clip-banner');
+    if (!banner) return;
+    banner.classList.remove('show');
+    if (!(navigator.clipboard?.read && window.isSecureContext)) return;
+    try {
+      const items = await navigator.clipboard.read();
+      const first = items.find(i => i.types.some(t => t.startsWith('image/')));
+      if (!first) return;
+      const mime = first.types.find(t => t.startsWith('image/'));
+      banner.classList.add('show');
+      document.getElementById('fix-clip-paste').onclick = async () => {
+        const blob = await first.getType(mime);
+        const file = new File([blob], `clipboard-${Date.now()}.png`, { type: mime });
+        handleFixFile(file);
+        banner.classList.remove('show');
+      };
+    } catch { /* permission denied or unsupported — silent */ }
+  }
 
   function handleFixFile(file) {
     if (!file?.type.startsWith('image/')) return;
