@@ -2076,6 +2076,7 @@
       bug.status = pendingVerifies.get(String(id)) || 'Fixed';
       pendingVerifies.delete(String(id));
       renderBugs();
+      renderVerifyInbox();
     });
 
     const { error } = await sb.from('bugs').update({ status: 'Verified' }).eq('id', id);
@@ -2084,6 +2085,7 @@
       pendingVerifies.delete(String(id));
       cancelToast();
       renderBugs();
+      renderVerifyInbox();
       showToast('Couldn\'t verify — try again', true);
       return;
     }
@@ -2112,6 +2114,7 @@
       undone = true;
       Object.assign(bug, prev);
       renderBugs();
+      renderVerifyInbox();
     });
 
     const updates = { status: 'Open', fix_notes: null };
@@ -2122,6 +2125,7 @@
       Object.assign(bug, prev);
       cancelToast();
       renderBugs();
+      renderVerifyInbox();
       showToast('Couldn\'t reopen — try again', true);
       return;
     }
