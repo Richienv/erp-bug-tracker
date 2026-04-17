@@ -935,6 +935,21 @@
   .list-table tbody tr:last-child { border-bottom: none; }
   .list-table tbody tr:hover { background: var(--bg-secondary); }
   .list-table tbody tr.list-selected { background: var(--blue-bg); }
+  .list-table tbody tr.group-row { cursor: default; background: var(--bg-secondary); }
+  .list-table tbody tr.group-row:hover { background: var(--bg-secondary); }
+  .list-table tbody tr.group-row td {
+    padding: 8px 14px; font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-tertiary); border-top: 0.5px solid var(--border-light);
+  }
+  .list-table tbody tr.group-row .group-dot {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    margin-right: 7px; vertical-align: middle;
+  }
+  .list-table tbody tr.group-row .group-count {
+    margin-left: 8px; color: var(--text-tertiary);
+    font-weight: 500; letter-spacing: 0;
+  }
   .list-table td { padding: 9px 14px; font-size: 13px; vertical-align: middle; }
   .list-id { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); white-space: nowrap; }
   .list-title { color: var(--text-primary); font-weight: 500; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
@@ -1515,7 +1530,32 @@
     const reporterInitials = { 'Darren':'D','Richie':'R','Raymond':'RA' };
     const reporterChipClass = { 'Darren':'chip-d','Richie':'chip-r','Raymond':'chip-ra' };
 
-    filtered.forEach(bug => {
+    // Sort by status (pipeline order), then by created_at desc within each group
+    const statusRank = Object.fromEntries(ALL_STATUSES.map((s, i) => [s, i]));
+    const sorted = [...filtered].sort((a, b) => {
+      const ra = statusRank[a.status] ?? 99;
+      const rb = statusRank[b.status] ?? 99;
+      if (ra !== rb) return ra - rb;
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+
+    let currentGroup = null;
+    sorted.forEach(bug => {
+      if (bug.status !== currentGroup) {
+        currentGroup = bug.status;
+        const groupCount = sorted.filter(b => b.status === currentGroup).length;
+        const dotCls = STATUS_DOT_CLASS[currentGroup] || 'dot-open';
+        const groupTr = document.createElement('tr');
+        groupTr.className = 'group-row';
+        groupTr.innerHTML = `
+          <td colspan="7">
+            <span class="group-dot status-dot ${dotCls}"></span>${esc(currentGroup)}
+            <span class="group-count">${groupCount}</span>
+          </td>
+        `;
+        tbody.appendChild(groupTr);
+      }
+
       const tr = document.createElement('tr');
       if (bug.id === selectedBugId) tr.classList.add('list-selected');
       const date = new Date(bug.created_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
