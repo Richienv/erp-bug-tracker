@@ -1143,10 +1143,11 @@
 
   /* showUndoToast — 6s toast with an Undo button. Returns a cancel() function. */
   function showUndoToast(message, onUndo, durationMs = 6000) {
-    let toast = document.querySelector('.toast.with-action');
+    let toast = document.getElementById('undo-toast');
     if (toast) toast.remove();
     toast = document.createElement('div');
     toast.className = 'toast with-action show';
+    toast.id = 'undo-toast';
     toast.innerHTML = `<span></span><button class="toast-undo-btn" type="button">Undo</button>`;
     toast.firstChild.textContent = message;
     document.body.appendChild(toast);
