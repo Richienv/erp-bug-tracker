@@ -1207,6 +1207,9 @@
       </div>
     </div>
 
+    <!-- Verify inbox — shows Fixed bugs the current user reported, awaiting verify -->
+    <section class="verify-inbox hide" id="verify-inbox" aria-label="Bugs awaiting your verification"></section>
+
     <!-- Section heading (small, above list) -->
     <div class="list-heading">
       <span id="feed-title">All bugs</span>
@@ -1928,6 +1931,7 @@
   const PLACEHOLDER_SVG = `<svg viewBox="0 0 28 28"><rect x="3" y="5" width="22" height="18" rx="2"/><path d="M3 18l6-5 4 4 3-3 6 5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="19" cy="10" r="2"/></svg>`;
 
   function renderBugs(newId) {
+    renderVerifyInbox();
     const meta = VIEW_META[activeView] || VIEW_META.dashboard;
     const bugs = getFilteredBugs();
 
@@ -1944,6 +1948,115 @@
       renderKanbanView(bugs, meta);
     }
   }
+
+  /* ============================================================
+     Verify inbox — Fixed bugs reported by currentName
+     ============================================================ */
+  const verifyInboxEl = document.getElementById('verify-inbox');
+  let viDismissed = sessionStorage.getItem('vi-dismissed') === '1';
+
+  function getVerifyQueue() {
+    return allBugs.filter(b => b.status === 'Fixed' && b.reporter === currentName);
+  }
+
+  function renderVerifyInbox() {
+    if (!verifyInboxEl) return;
+    const queue = getVerifyQueue();
+
+    // Hide on the sidebar's needs-verify view (avoid duplication with the main list)
+    if (queue.length === 0 || activeView === 'needs-verify' || viDismissed) {
+      verifyInboxEl.classList.add('hide');
+      verifyInboxEl.innerHTML = '';
+      return;
+    }
+
+    verifyInboxEl.classList.remove('hide', 'fade-out');
+
+    const head = `
+      <div class="vi-head">
+        <div class="vi-head-title">Needs your verification <span class="vi-count">· ${queue.length}</span></div>
+        <button class="vi-dismiss" id="vi-dismiss-all" type="button" aria-label="Dismiss until next load">&times;</button>
+      </div>`;
+
+    const cardHTML = (b) => {
+      const beforeUrl = b.screenshot_url || '';
+      const afterUrl  = b.fix_screenshot_url || '';
+      const beforeThumb = beforeUrl
+        ? `<div class="vi-thumb" data-lightbox="${esc(beforeUrl)}"><span class="vi-thumb-label">BEFORE</span><img src="${esc(beforeUrl)}" alt=""></div>`
+        : `<div class="vi-thumb placeholder"><span class="vi-thumb-label">BEFORE</span>none</div>`;
+      const afterThumb = afterUrl
+        ? `<div class="vi-thumb" data-lightbox="${esc(afterUrl)}"><span class="vi-thumb-label">AFTER</span><img src="${esc(afterUrl)}" alt=""></div>`
+        : `<div class="vi-thumb placeholder"><span class="vi-thumb-label">AFTER</span>none</div>`;
+
+      const noteHTML = b.fix_notes
+        ? `<div class="vi-note">${esc(b.fix_notes)}</div>`
+        : `<div class="vi-note empty">No fixer note</div>`;
+
+      return `
+        <div class="vi-card" data-vi-id="${b.id}">
+          <div class="vi-thumbs">${beforeThumb}${afterThumb}</div>
+          <div class="vi-body">
+            <div class="vi-title">${esc(b.bug_id ? b.bug_id + ' · ' : '')}${esc(b.title)}</div>
+            ${noteHTML}
+          </div>
+          <div class="vi-actions">
+            <button class="vi-btn reopen" data-vi-reopen="${b.id}" type="button">↩ Reopen</button>
+            <button class="vi-btn verify" data-vi-verify="${b.id}" type="button">✓ Verify</button>
+          </div>
+          <div class="vi-reopen-prompt">
+            <textarea placeholder="What's still wrong? (optional)"></textarea>
+            <div class="vi-reopen-actions">
+              <button class="vi-btn reopen" data-vi-reopen-cancel="${b.id}" type="button">Cancel</button>
+              <button class="vi-btn verify" data-vi-reopen-confirm="${b.id}" type="button" style="background:var(--red);">Reopen bug</button>
+            </div>
+          </div>
+        </div>`;
+    };
+
+    verifyInboxEl.innerHTML = head + queue.map(cardHTML).join('');
+    bindVerifyInboxEvents();
+  }
+
+  function bindVerifyInboxEvents() {
+    // event delegation: one listener, many buttons
+    verifyInboxEl.onclick = (e) => {
+      const dismiss = e.target.closest('#vi-dismiss-all');
+      if (dismiss) { viDismissed = true; sessionStorage.setItem('vi-dismissed','1'); renderVerifyInbox(); return; }
+
+      const verifyBtn = e.target.closest('[data-vi-verify]');
+      if (verifyBtn) { handleVerifyInbox(verifyBtn.dataset.viVerify); return; }
+
+      const reopenBtn = e.target.closest('[data-vi-reopen]');
+      if (reopenBtn) {
+        const card = reopenBtn.closest('.vi-card');
+        card.classList.add('reopening');
+        card.querySelector('textarea').focus();
+        return;
+      }
+      const cancelBtn = e.target.closest('[data-vi-reopen-cancel]');
+      if (cancelBtn) { cancelBtn.closest('.vi-card').classList.remove('reopening'); return; }
+
+      const confirmBtn = e.target.closest('[data-vi-reopen-confirm]');
+      if (confirmBtn) {
+        const card = confirmBtn.closest('.vi-card');
+        const note = card.querySelector('textarea').value.trim();
+        handleReopenInbox(confirmBtn.dataset.viReopenConfirm, note);
+        return;
+      }
+
+      const thumb = e.target.closest('[data-lightbox]');
+      if (thumb) {
+        // Use the shared lightbox (same pattern as bindListEvents)
+        lightboxImg.src = thumb.dataset.lightbox;
+        lightbox.classList.add('show');
+        return;
+      }
+    };
+  }
+
+  // stubs — filled in next tasks
+  function handleVerifyInbox(id) { /* Task 5 */ }
+  function handleReopenInbox(id, note) { /* Task 6 */ }
 
   /* ---- List View ---- */
   function renderListView(bugs, meta, newId) {
