@@ -1629,9 +1629,8 @@
   let fixDragCounter = 0;
   if (fixModal) {
     fixModal.addEventListener('dragenter', e => {
-      if (!e.dataTransfer?.types?.includes('Files')) return;
       fixDragCounter++;
-      fixModal.classList.add('dragging-over');
+      if (e.dataTransfer?.types?.includes('Files')) fixModal.classList.add('dragging-over');
     });
     fixModal.addEventListener('dragover', e => { e.preventDefault(); });
     fixModal.addEventListener('dragleave', () => {
