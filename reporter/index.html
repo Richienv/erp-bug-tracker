@@ -110,178 +110,600 @@
   /* ── Page Layout ── */
   .page { display: flex; min-height: 100vh; }
 
-  /* ── Sidebar ── */
+  /* ── Sidebar (collapsible) ── */
   .sidebar {
     width: 220px; min-width: 220px;
     background: var(--bg-secondary);
     border-right: 0.5px solid var(--border-light);
     display: flex; flex-direction: column;
-    height: 100vh; overflow-y: auto; position: sticky; top: 0;
+    height: 100vh; overflow-y: auto; overflow-x: hidden;
+    position: sticky; top: 0;
+    transition: width 0.2s ease, min-width 0.2s ease;
   }
+  .sidebar.collapsed { width: 58px; min-width: 58px; }
 
-  .sidebar-top { padding: 18px 16px 14px; border-bottom: 0.5px solid var(--border-light); }
-  .sidebar-logo { display: flex; align-items: center; gap: 9px; }
-  .logo-mark { width: 26px; height: 26px; background: var(--text-primary); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .sidebar-top {
+    padding: 12px 12px 10px;
+    border-bottom: 0.5px solid var(--border-light);
+    display: flex; align-items: center; gap: 8px;
+    min-height: 52px;
+  }
+  .sidebar-logo { display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1; }
+  .logo-mark { width: 26px; height: 26px; background: var(--text-primary); border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .logo-mark svg { width: 14px; height: 14px; fill: var(--bg-primary); }
-  .logo-name { font-size: 13px; font-weight: 500; }
+  .logo-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .sidebar-toggle {
+    width: 26px; height: 26px; border-radius: 6px;
+    background: transparent; border: none;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-tertiary); cursor: pointer; flex-shrink: 0;
+    transition: background 0.12s, color 0.12s;
+  }
+  .sidebar-toggle:hover { background: var(--bg-primary); color: var(--text-primary); }
+  .sidebar-toggle svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.2s; }
+  .sidebar.collapsed .sidebar-toggle svg { transform: rotate(180deg); }
+
+  .sidebar.collapsed .sidebar-top {
+    flex-direction: column;
+    padding: 12px 8px;
+    gap: 10px;
+  }
+  .sidebar.collapsed .logo-name { display: none; }
+  .sidebar.collapsed .sidebar-logo { flex: 0 0 auto; justify-content: center; }
 
   .nav-section { padding: 10px 8px 4px; }
   .nav-label { font-size: 10.5px; color: var(--text-tertiary); padding: 6px 8px 4px; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500; }
-  .nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius-sm); font-size: 13px; color: var(--text-secondary); cursor: pointer; transition: background 0.12s, color 0.12s; user-select: none; text-decoration: none; }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 7px 8px; border-radius: var(--radius-sm);
+    font-size: 13px; color: var(--text-secondary);
+    cursor: pointer; transition: background 0.12s, color 0.12s;
+    user-select: none; text-decoration: none;
+    position: relative;
+  }
   .nav-item:hover { background: var(--bg-primary); color: var(--text-primary); }
   .nav-item.active { background: var(--bg-primary); color: var(--text-primary); }
-  .nav-item svg { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.55; }
-  .nav-badge { margin-left: auto; font-size: 10.5px; background: var(--bg-tertiary); color: var(--text-tertiary); padding: 1px 6px; border-radius: 10px; font-weight: 500; }
+  .nav-item svg { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.6; }
+  .nav-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nav-badge {
+    margin-left: auto; font-size: 10.5px;
+    background: var(--bg-tertiary); color: var(--text-tertiary);
+    padding: 1px 6px; border-radius: 10px; font-weight: 500;
+    flex-shrink: 0;
+  }
   .nav-badge.red { background: var(--red-bg); color: var(--red-text); }
+  .nav-badge.zero { display: none; }
+
+  .sidebar.collapsed .nav-label { display: none; }
+  .sidebar.collapsed .nav-text { display: none; }
+  .sidebar.collapsed .nav-item {
+    justify-content: center;
+    padding: 9px 0;
+  }
+  .sidebar.collapsed .nav-section { padding: 4px 6px; }
+  .sidebar.collapsed .nav-badge {
+    position: absolute;
+    top: 4px; right: 8px;
+    width: 7px; height: 7px;
+    min-width: 0; padding: 0;
+    font-size: 0; color: transparent;
+    border-radius: 50%;
+    background: var(--text-tertiary);
+  }
+  .sidebar.collapsed .nav-badge.red { background: var(--red); }
+
+  /* Hover tooltip on collapsed nav items */
+  .sidebar.collapsed .nav-item:hover::after {
+    content: attr(data-tip);
+    position: absolute; left: calc(100% + 8px); top: 50%;
+    transform: translateY(-50%);
+    background: var(--text-primary); color: var(--bg-primary);
+    font-size: 11.5px; padding: 4px 8px; border-radius: 6px;
+    white-space: nowrap; z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  }
 
   .sidebar-divider { height: 0.5px; background: var(--border-light); margin: 6px 0; }
 
-  /* ── Progress section ── */
+  /* Progress section */
   .progress-section { padding: 8px 8px 12px; }
-
   .progress-item { padding: 7px 8px; border-radius: var(--radius-sm); margin-bottom: 2px; cursor: pointer; transition: background 0.1s; }
   .progress-item:hover { background: var(--bg-primary); }
-
   .progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
   .progress-module { font-size: 12px; color: var(--text-primary); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
   .progress-pct { font-size: 11.5px; font-weight: 500; }
   .pct-high { color: var(--green-text); }
   .pct-mid { color: var(--amber-text); }
   .pct-low { color: var(--red-text); }
-
   .progress-meta { font-size: 10.5px; color: var(--text-tertiary); margin-bottom: 5px; }
-
   .progress-bar-track { height: 3px; background: var(--border-light); border-radius: 2px; overflow: hidden; }
   .progress-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
   .fill-high { background: var(--green); }
   .fill-mid { background: var(--amber); }
   .fill-low { background: var(--red); }
 
-  .sidebar-footer { margin-top: auto; padding: 12px 14px; border-top: 0.5px solid var(--border-light); display: flex; align-items: center; gap: 9px; }
+  .sidebar.collapsed .progress-section,
+  .sidebar.collapsed .nav-section-progress { display: none; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px 14px;
+    border-top: 0.5px solid var(--border-light);
+    display: flex; align-items: center; gap: 9px;
+  }
   .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--blue-bg); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--blue-text); flex-shrink: 0; }
-  .footer-name { font-size: 12px; font-weight: 500; }
+  .sidebar-footer-info { min-width: 0; overflow: hidden; }
+  .footer-name { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .footer-role { font-size: 11px; color: var(--text-tertiary); }
 
+  .sidebar.collapsed .sidebar-footer { justify-content: center; padding: 12px 8px; }
+  .sidebar.collapsed .sidebar-footer-info { display: none; }
+
   /* ── Main ── */
-  .main { flex: 1; padding: 36px 40px; max-width: 700px; overflow-y: auto; }
-  .page-header { margin-bottom: 28px; }
-  .greeting-row { display: flex; align-items: center; gap: 10px; margin-bottom: 3px; }
-  .avatar-lg { width: 34px; height: 34px; border-radius: 50%; background: var(--blue-bg); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--blue-text); }
-  h1 { font-size: 20px; font-weight: 500; }
-  .page-sub { font-size: 13px; color: var(--text-tertiary); margin-left: 44px; }
+  .main { flex: 1; padding: 28px 32px; max-width: 1040px; overflow-y: auto; width: 100%; }
+  .page-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .page-header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.015em; }
+  .page-sub { font-size: 12.5px; color: var(--text-tertiary); margin-top: 2px; }
 
   /* ── Card ── */
-  .card { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
-  .card-label { font-size: 12px; font-weight: 500; margin-bottom: 14px; }
+  .card { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 8px 14px; margin-bottom: 16px; }
+  .card-label { font-size: 11px; font-weight: 500; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); }
 
-  .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
-  .field-label { font-size: 11.5px; color: var(--text-secondary); font-weight: 500; }
-
-  /* ── Steps builder ── */
-  .steps-builder { display: flex; flex-direction: column; gap: 10px; }
-  .steps-row { display: flex; flex-direction: column; gap: 6px; }
-  .steps-row-label { font-size: 11px; color: var(--text-tertiary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
-  .steps-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-  .steps-chip {
-    padding: 4px 11px; border-radius: 20px; font-size: 12px; font-family: var(--font);
-    border: 0.5px solid var(--border-light); background: var(--bg-secondary);
-    color: var(--text-secondary); cursor: pointer; user-select: none;
-    transition: all 0.1s;
-  }
-  .steps-chip:hover { border-color: var(--border-mid); color: var(--text-primary); }
-  .steps-chip.active { background: var(--text-primary); color: var(--bg-primary); border-color: var(--text-primary); }
-  .steps-detail {
-    width: 100%; padding: 6px 10px; font-size: 12.5px; font-family: var(--font);
-    background: var(--bg-secondary); border: 0.5px solid var(--border-light);
-    border-radius: var(--radius-md); color: var(--text-primary); outline: none;
-    transition: border-color 0.12s, background 0.12s;
-  }
-  .steps-detail:focus { border-color: var(--border-strong); background: var(--bg-primary); }
-  .steps-detail::placeholder { color: var(--text-tertiary); }
-  .steps-preview {
-    font-size: 12px; color: var(--text-secondary); line-height: 1.5;
-    padding: 8px 10px; background: var(--bg-secondary);
-    border-radius: var(--radius-sm); border: 0.5px solid var(--border-light);
-    display: none; font-style: italic;
-  }
-  .steps-preview.show { display: block; }
-
-  .field-input, .field-select { width: 100%; padding: 8px 11px; font-size: 13px; font-family: var(--font); background: var(--bg-secondary); border: 0.5px solid var(--border-light); border-radius: var(--radius-md); color: var(--text-primary); outline: none; transition: border-color 0.12s, background 0.12s; appearance: none; -webkit-appearance: none; }
-  .field-input:focus, .field-select:focus { border-color: var(--border-strong); background: var(--bg-primary); }
-  .field-input::placeholder { color: var(--text-tertiary); }
-  textarea.field-input { min-height: 76px; resize: vertical; line-height: 1.55; }
-
-  .select-wrapper { position: relative; }
-  .select-wrapper::after { content: ''; position: absolute; right: 11px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid var(--text-tertiary); pointer-events: none; }
-  .field-select { cursor: pointer; padding-right: 28px; }
-
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-  #submodule-field { display: none; }
-  #submodule-field.visible { display: flex; }
-
-  /* ── Upload Zone ── */
-  .upload-zone {
-    border: 0.5px dashed var(--border-mid); border-radius: var(--radius-md);
-    padding: 18px 16px; text-align: center; cursor: pointer; position: relative;
-    transition: background 0.12s, border-color 0.12s;
-    background: var(--bg-secondary); overflow: hidden;
-  }
-  .upload-zone:hover, .upload-zone.dragover { background: var(--bg-tertiary); border-color: var(--border-strong); }
-  .upload-zone.has-image { padding: 0; height: 120px; border-style: solid; cursor: default; }
-  .upload-icon { width: 28px; height: 28px; margin: 0 auto 7px; opacity: 0.25; }
-  .upload-text { font-size: 12.5px; color: var(--text-secondary); }
-  .upload-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
-  .preview-img { width: 100%; height: 100%; object-fit: cover; display: none; }
-  .upload-remove {
-    display: none; position: absolute; top: 6px; right: 6px;
-    width: 24px; height: 24px; border-radius: 50%;
-    background: rgba(0,0,0,0.5); color: #fff; border: none;
-    cursor: pointer; align-items: center; justify-content: center;
-    font-size: 14px; line-height: 1; z-index: 2;
-  }
-  .upload-zone.has-image .upload-remove { display: flex; }
-  .upload-zone.has-image .preview-img { display: block; }
-  .upload-zone.has-image .upload-content { display: none; }
-
-  /* ── Submit Button ── */
-  .submit-btn {
-    width: 100%; padding: 9px;
-    font-size: 13px; font-weight: 500; font-family: var(--font);
-    background: var(--text-primary); color: var(--bg-primary);
-    border: none; border-radius: var(--radius-md);
-    cursor: pointer; margin-top: 12px; transition: opacity 0.12s;
-  }
-  .submit-btn:hover:not(:disabled) { opacity: 0.82; }
-  .submit-btn:active:not(:disabled) { opacity: 0.7; }
-  .submit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
   .required-star { color: var(--red); margin-left: 1px; font-weight: 400; }
 
-  /* ── Bug list ── */
-  .list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .list-title { font-size: 12px; font-weight: 500; }
-  .list-count { font-size: 11px; color: var(--text-tertiary); background: var(--bg-secondary); padding: 2px 8px; border-radius: 10px; }
+  /* ══════════════════════════════════════════════════════════
+     REPORT MODAL — mobile-first bottom-sheet / desktop card
+     ══════════════════════════════════════════════════════════ */
+  .report-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.38);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    display: none; align-items: flex-end; justify-content: center;
+    z-index: 2500;
+  }
+  .report-modal-overlay.show { display: flex; animation: rmOverlayIn 0.15s ease; }
+  @keyframes rmOverlayIn { from { opacity: 0; } to { opacity: 1; } }
 
-  /* ── Date Groups ── */
-  .group-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 0.5px solid var(--border-light); cursor: pointer; user-select: none; }
-  .group-name { font-size: 11.5px; color: var(--text-tertiary); font-weight: 500; }
-  .group-n { font-size: 11px; color: var(--text-tertiary); }
-  .group-body { overflow: hidden; transition: max-height 0.25s ease; max-height: 5000px; }
-  .group-body.collapsed { max-height: 0; }
+  .report-modal {
+    background: var(--bg-primary);
+    width: 100%; max-width: 560px;
+    height: 100dvh; height: 100vh; max-height: 100vh;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    animation: rmSheetIn 0.28s cubic-bezier(.2,.9,.3,1);
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.14);
+  }
+  @keyframes rmSheetIn {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
 
-  /* ── Bug Row ── */
+  @media (min-width: 640px) {
+    .report-modal-overlay { align-items: center; padding: 24px; }
+    .report-modal {
+      height: auto; max-height: min(92vh, 780px);
+      border-radius: 16px;
+      animation: rmCardIn 0.2s ease;
+    }
+    @keyframes rmCardIn {
+      from { opacity: 0; transform: scale(0.97) translateY(8px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+  }
+
+  /* Header */
+  .rm-header {
+    flex-shrink: 0;
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 0.5px solid var(--border-light);
+    background: var(--bg-primary);
+  }
+  .rm-title { font-size: 15px; font-weight: 600; flex: 1; letter-spacing: -0.01em; }
+  .rm-close {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: none; background: var(--bg-secondary);
+    color: var(--text-secondary); font-size: 19px; line-height: 1;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.12s, color 0.12s;
+  }
+  .rm-close:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+  /* Body (scrollable) */
+  .rm-body {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px 16px 20px;
+  }
+  .rm-section + .rm-section { margin-top: 22px; }
+  .rm-q {
+    font-size: 13px; font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    letter-spacing: -0.005em;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .rm-q .req { color: var(--red); font-weight: 400; }
+
+  /* Big textarea */
+  .rm-textarea {
+    width: 100%;
+    min-height: 88px;
+    padding: 12px 14px;
+    font-size: 16px; font-family: var(--font);
+    line-height: 1.45;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-light);
+    border-radius: 10px;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .rm-textarea:focus { border-color: var(--text-primary); background: var(--bg-primary); }
+  .rm-textarea::placeholder { color: var(--text-tertiary); }
+  @media (min-width: 640px) { .rm-textarea { font-size: 14px; } }
+
+  /* Module tile grid */
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+  @media (min-width: 480px) {
+    .module-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  .module-tile {
+    display: flex; align-items: center; gap: 9px;
+    padding: 11px 12px;
+    font-family: var(--font);
+    font-size: 13px; font-weight: 500;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+    min-height: 44px;
+  }
+  .module-tile:hover { background: var(--bg-tertiary); }
+  .module-tile.active {
+    background: var(--bg-primary);
+    border-color: var(--text-primary);
+    box-shadow: 0 0 0 1px var(--text-primary) inset;
+  }
+  .module-tile .mt-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    flex-shrink: 0; background: var(--text-tertiary);
+  }
+  .module-tile[data-color="green"]  .mt-dot { background: var(--green); }
+  .module-tile[data-color="amber"]  .mt-dot { background: var(--amber); }
+  .module-tile[data-color="blue"]   .mt-dot { background: var(--blue); }
+  .module-tile[data-color="purple"] .mt-dot { background: #8b5cf6; }
+  .module-tile[data-color="red"]    .mt-dot { background: var(--red); }
+  .module-tile[data-color="pink"]   .mt-dot { background: #ec4899; }
+  .module-tile[data-color="slate"]  .mt-dot { background: #64748b; }
+  .module-tile .mt-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Submodule select */
+  .submodule-wrap { margin-top: 8px; display: none; }
+  .submodule-wrap.visible { display: block; }
+  .submodule-select {
+    width: 100%; padding: 11px 36px 11px 14px;
+    font-size: 14px; font-family: var(--font);
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-light);
+    border-radius: 10px;
+    color: var(--text-primary);
+    cursor: pointer; outline: none;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%239a9a94' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center;
+    transition: border-color 0.12s, background-color 0.12s;
+  }
+  .submodule-select:focus { border-color: var(--text-primary); }
+
+  /* Category pills */
+  .category-pills {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .cat-pill {
+    padding: 8px 13px;
+    font-size: 12.5px; font-family: var(--font); font-weight: 500;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-light);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer; user-select: none;
+    transition: all 0.12s;
+    min-height: 36px;
+  }
+  .cat-pill:hover { border-color: var(--border-mid); color: var(--text-primary); }
+  .cat-pill.active {
+    background: var(--text-primary); color: var(--bg-primary);
+    border-color: var(--text-primary);
+  }
+
+  /* Upload */
+  .rm-upload {
+    border: 1px dashed var(--border-mid);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    padding: 22px 16px;
+    text-align: center;
+    cursor: pointer;
+    position: relative; overflow: hidden;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .rm-upload:hover, .rm-upload.dragover {
+    background: var(--bg-tertiary);
+    border-color: var(--text-primary);
+  }
+  .rm-upload.has-image {
+    padding: 0; border-style: solid;
+    background: var(--bg-primary);
+    cursor: default;
+  }
+  .up-icon {
+    width: 28px; height: 28px;
+    margin: 0 auto 8px; display: block;
+    opacity: 0.38; stroke: var(--text-secondary);
+  }
+  .up-text { font-size: 13.5px; color: var(--text-primary); font-weight: 500; }
+  .up-hint { font-size: 11.5px; color: var(--text-tertiary); margin-top: 3px; }
+  .up-inner { pointer-events: none; }
+  .rm-upload img.preview-img {
+    display: none;
+    width: 100%; max-height: 260px;
+    object-fit: contain;
+    background: var(--bg-tertiary);
+  }
+  .rm-upload.has-image img.preview-img { display: block; }
+  .rm-upload.has-image .up-inner { display: none; }
+  .up-remove {
+    position: absolute; top: 8px; right: 8px;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(0,0,0,0.6); color: #fff;
+    border: none; cursor: pointer;
+    display: none; align-items: center; justify-content: center;
+    font-size: 16px; line-height: 1; z-index: 2;
+  }
+  .rm-upload.has-image .up-remove { display: flex; }
+
+  /* Optional repro steps (collapsible) */
+  .rm-more {
+    margin-top: 22px;
+    border-top: 0.5px solid var(--border-light);
+    padding-top: 14px;
+  }
+  .rm-more summary {
+    font-size: 13px; font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer; user-select: none;
+    list-style: none;
+    padding: 6px 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .rm-more summary::-webkit-details-marker { display: none; }
+  .rm-more summary::before {
+    content: ''; width: 0; height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 5px solid var(--text-tertiary);
+    transition: transform 0.15s;
+    display: inline-block;
+  }
+  .rm-more[open] summary::before { transform: rotate(90deg); }
+  .rm-more summary:hover { color: var(--text-primary); }
+  .rm-more-body { padding-top: 12px; display: flex; flex-direction: column; gap: 14px; }
+
+  .steps-row2 { display: flex; flex-direction: column; gap: 7px; }
+  .steps-row2 .label {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+  }
+  .steps-row2 .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .steps-row2 .chip {
+    padding: 6px 12px; border-radius: 16px;
+    font-size: 12px; font-family: var(--font);
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-light);
+    color: var(--text-secondary);
+    cursor: pointer; user-select: none;
+    transition: all 0.1s;
+  }
+  .steps-row2 .chip:hover { border-color: var(--border-mid); color: var(--text-primary); }
+  .steps-row2 .chip.active {
+    background: var(--text-primary); color: var(--bg-primary);
+    border-color: var(--text-primary);
+  }
+  .steps-row2 input[type="text"] {
+    width: 100%; padding: 9px 12px;
+    font-size: 14px; font-family: var(--font);
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-light);
+    border-radius: 8px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .steps-row2 input[type="text"]:focus { border-color: var(--text-primary); background: var(--bg-primary); }
+  .steps-row2 input[type="text"]::placeholder { color: var(--text-tertiary); }
+
+  .steps-preview-box {
+    display: none;
+    padding: 10px 12px;
+    font-size: 12.5px; line-height: 1.5;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-light);
+    border-radius: 8px;
+    font-style: italic;
+  }
+  .steps-preview-box.show { display: block; }
+
+  /* Footer submit (sticky) */
+  .rm-footer {
+    flex-shrink: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    border-top: 0.5px solid var(--border-light);
+    background: var(--bg-primary);
+  }
+  .rm-submit {
+    width: 100%; padding: 14px;
+    font-size: 14.5px; font-weight: 600; font-family: var(--font);
+    background: var(--text-primary); color: var(--bg-primary);
+    border: none; border-radius: 10px;
+    cursor: pointer;
+    transition: opacity 0.12s, transform 0.08s;
+    letter-spacing: -0.01em;
+  }
+  .rm-submit:hover:not(:disabled) { opacity: 0.85; }
+  .rm-submit:active:not(:disabled) { transform: scale(0.99); }
+  .rm-submit:disabled { opacity: 0.32; cursor: not-allowed; }
+  .rm-missing {
+    font-size: 11.5px; color: var(--text-tertiary);
+    text-align: center; margin-top: 8px;
+    display: none;
+  }
+  .rm-missing.show { display: block; }
+
+  /* ── Unified Toolbar (Report Bug + view toggle + filters in one row) ── */
+  .toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    margin-bottom: 14px;
+  }
+  .toolbar-left { display: flex; align-items: center; gap: 8px; }
+  .toolbar-right { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+
+  .report-btn {
+    padding: 8px 14px; font-size: 13px; font-weight: 500; font-family: var(--font);
+    background: var(--text-primary); color: var(--bg-primary);
+    border: none; border-radius: var(--radius-md); cursor: pointer;
+    transition: opacity 0.12s; display: flex; align-items: center; gap: 6px;
+  }
+  .report-btn:hover { opacity: 0.85; }
+  .report-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+  /* View toggle */
+  .view-toggle {
+    display: flex; border: 0.5px solid var(--border-mid); border-radius: var(--radius-md); overflow: hidden;
+  }
+  .view-toggle-btn {
+    padding: 6px 11px; font-size: 12px; font-family: var(--font);
+    background: var(--bg-primary); color: var(--text-secondary);
+    border: none; cursor: pointer; transition: all 0.12s;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .view-toggle-btn:not(:last-child) { border-right: 0.5px solid var(--border-mid); }
+  .view-toggle-btn.active { background: var(--text-primary); color: var(--bg-primary); }
+  .view-toggle-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+
+  /* Filters */
+  .filter-select {
+    padding: 6px 26px 6px 10px; font-size: 12.5px; font-family: var(--font);
+    background: var(--bg-primary); border: 0.5px solid var(--border-mid);
+    border-radius: var(--radius-md); color: var(--text-primary);
+    appearance: none; -webkit-appearance: none; cursor: pointer; outline: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%239a9a94' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 9px center;
+  }
+  .filter-search {
+    padding: 6px 10px; font-size: 12.5px; font-family: var(--font);
+    background: var(--bg-primary); border: 0.5px solid var(--border-mid);
+    border-radius: var(--radius-md); color: var(--text-primary);
+    outline: none; min-width: 150px; transition: border-color 0.12s;
+  }
+  .filter-search:focus { border-color: var(--border-strong); }
+  .filter-search::placeholder { color: var(--text-tertiary); }
+
+  /* Section label above list */
+  .list-heading {
+    display: flex; align-items: baseline; gap: 8px;
+    margin: 0 2px 8px;
+    font-size: 11px; font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase; letter-spacing: 0.07em;
+  }
+  .list-heading-count {
+    font-size: 11px; font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: none; letter-spacing: 0;
+  }
+
+  /* ── Bug Row (decluttered) ── */
   .bug-row { border-bottom: 0.5px solid var(--border-light); }
   .bug-row:last-child { border-bottom: none; }
-  .bug-row-main { display: flex; align-items: center; gap: 12px; padding: 11px 0; cursor: pointer; }
+  .bug-row-main {
+    display: flex; align-items: center; gap: 11px;
+    padding: 11px 4px; cursor: pointer;
+    transition: background 0.12s;
+  }
+  .bug-row-main:hover { background: var(--bg-secondary); }
 
-  .bug-icon { width: 34px; height: 34px; flex-shrink: 0; background: var(--bg-secondary); border: 0.5px solid var(--border-light); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; }
-  .bug-icon svg { width: 15px; height: 15px; stroke: var(--text-tertiary); fill: none; stroke-width: 1.3; }
+  /* Leading status dot */
+  .bug-lead-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    flex-shrink: 0; background: var(--text-tertiary);
+    box-shadow: 0 0 0 3px transparent;
+    transition: box-shadow 0.15s;
+    margin-left: 2px;
+  }
+  .bug-lead-dot.s-open        { background: var(--red); }
+  .bug-lead-dot.s-in-progress { background: var(--amber); }
+  .bug-lead-dot.s-fixed       { background: var(--blue); }
+  .bug-lead-dot.s-verified    { background: var(--green); }
+  .bug-lead-dot.s-closed      { background: var(--text-tertiary); }
+  .bug-row-main:hover .bug-lead-dot.s-open        { box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 18%, transparent); }
+  .bug-row-main:hover .bug-lead-dot.s-in-progress { box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 18%, transparent); }
+  .bug-row-main:hover .bug-lead-dot.s-fixed       { box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 18%, transparent); }
+  .bug-row-main:hover .bug-lead-dot.s-verified    { box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 18%, transparent); }
 
   .bug-body { flex: 1; min-width: 0; }
-  .bug-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .bug-tags { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .bug-title {
+    font-size: 13.5px; font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 3px;
+    letter-spacing: -0.005em;
+  }
+  .bug-meta {
+    font-size: 11.5px; color: var(--text-tertiary);
+    display: flex; align-items: center; gap: 5px;
+    min-width: 0;
+  }
+  .bug-meta > * { flex-shrink: 0; }
+  .bug-id { color: var(--text-secondary); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .bug-reporter { color: var(--purple-text); font-weight: 500; }
+  .bug-mods { color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; min-width: 0; flex-shrink: 1; }
+  .bug-sep { color: var(--text-tertiary); opacity: 0.5; }
 
+  .bug-action-hint {
+    font-size: 11px; font-weight: 500;
+    color: var(--blue-text);
+    flex-shrink: 0; white-space: nowrap;
+    padding: 3px 8px; border-radius: 6px;
+    background: var(--blue-bg);
+  }
+
+  .bug-time {
+    font-size: 11.5px; color: var(--text-tertiary);
+    flex-shrink: 0; font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* Legacy tag styles — still used in kanban cards */
   .tag { font-size: 11px; padding: 2px 7px; border-radius: 4px; border: 0.5px solid var(--border-light); background: var(--bg-secondary); color: var(--text-secondary); white-space: nowrap; }
+  .tag-reporter { background: var(--purple-bg); color: var(--purple-text); border-color: transparent; }
 
   .status-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; white-space: nowrap; }
   .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
@@ -298,14 +720,13 @@
 
   .bug-time { font-size: 11px; color: var(--text-tertiary); flex-shrink: 0; }
 
-  /* animate chevron */
   .chevron { width: 13px; height: 13px; stroke: var(--text-tertiary); fill: none; stroke-width: 1.5; transition: transform 0.2s; flex-shrink: 0; }
   .bug-row-main.expanded .chevron { transform: rotate(180deg); }
 
-  /* ── Bug Expand (non-Fixed) ── */
+  /* ── Bug Expand ── */
   .bug-expand {
     max-height: 0; overflow: hidden;
-    transition: max-height 0.25s ease; padding-left: 46px;
+    transition: max-height 0.25s ease; padding-left: 25px;
   }
   .bug-expand.open { max-height: 400px; }
   .expand-inner { padding-bottom: 12px; }
@@ -316,7 +737,7 @@
 
   /* ── Verify panel ── */
   .verify-panel {
-    margin: 0 0 12px 46px;
+    margin: 0 0 12px 25px;
     background: var(--bg-secondary);
     border: 0.5px solid var(--border-light);
     border-radius: var(--radius-md);
@@ -330,13 +751,11 @@
   .verify-panel-sub { font-size: 11px; color: var(--text-tertiary); }
 
   .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
-
   .compare-col { padding: 12px 14px; }
   .compare-col:first-child { border-right: 0.5px solid var(--border-light); }
   .compare-label { font-size: 10.5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
   .compare-label.before { color: var(--red-text); }
   .compare-label.after { color: var(--green-text); }
-
   .compare-img {
     width: 100%; aspect-ratio: 16/9;
     background: var(--bg-primary);
@@ -347,7 +766,6 @@
   }
   .compare-img svg { width: 24px; height: 24px; stroke: var(--text-tertiary); fill: none; stroke-width: 1.2; opacity: 0.4; }
   .compare-img img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
-
   .compare-note { font-size: 11px; color: var(--text-tertiary); margin-top: 6px; }
 
   .fix-notes-section { padding: 10px 14px; border-top: 0.5px solid var(--border-light); }
@@ -355,15 +773,49 @@
   .fix-notes-text { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
 
   .verify-footer { padding: 10px 14px; border-top: 0.5px solid var(--border-light); display: flex; align-items: center; gap: 8px; }
-
   .verify-btn { padding: 7px 16px; font-size: 12.5px; font-weight: 500; font-family: var(--font); background: var(--green); color: white; border: none; border-radius: var(--radius-md); cursor: pointer; transition: opacity 0.12s; }
   .verify-btn:hover { opacity: 0.85; }
   .verify-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
   .verified-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--green-text); background: var(--green-bg); padding: 5px 12px; border-radius: var(--radius-md); }
   .verified-badge svg { width: 12px; height: 12px; stroke: var(--green); fill: none; stroke-width: 2; }
-
   .verify-hint { font-size: 11.5px; color: var(--text-tertiary); }
+
+  /* ── Kanban Board ── */
+  .kanban-board {
+    display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;
+    min-height: 300px;
+  }
+  .kanban-col {
+    min-width: 200px; flex: 1;
+    background: var(--bg-secondary); border-radius: var(--radius-md);
+    border: 0.5px solid var(--border-light);
+    display: flex; flex-direction: column; max-height: 70vh;
+  }
+  .kanban-col-header {
+    padding: 10px 12px; font-size: 12px; font-weight: 600;
+    border-bottom: 0.5px solid var(--border-light);
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; background: var(--bg-secondary);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
+  .kanban-col-count {
+    font-size: 10.5px; font-weight: 500; color: var(--text-tertiary);
+    background: var(--bg-primary); padding: 1px 7px; border-radius: 10px;
+  }
+  .kanban-col-body {
+    flex: 1; overflow-y: auto; padding: 8px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .kanban-card {
+    background: var(--bg-primary); border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-md); padding: 10px 12px; cursor: pointer;
+    transition: box-shadow 0.12s;
+  }
+  .kanban-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .kanban-card-id { font-size: 10.5px; color: var(--text-tertiary); font-weight: 500; margin-bottom: 3px; }
+  .kanban-card-title { font-size: 12.5px; font-weight: 500; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .kanban-card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .kanban-card-time { font-size: 10.5px; color: var(--text-tertiary); margin-left: auto; }
 
   /* ── Empty State ── */
   .empty-state { text-align: center; padding: 36px 20px; }
@@ -382,7 +834,12 @@
   @media (max-width: 640px) {
     .sidebar { display: none; }
     .main { padding: 20px 16px; max-width: none; }
-    .two-col { grid-template-columns: 1fr; }
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .toolbar-right { margin-left: 0; }
+    .filter-bar { flex-direction: column; align-items: stretch; }
+    .filter-search { min-width: 0; }
+    .kanban-board { flex-direction: column; }
+    .kanban-col { min-width: 0; max-height: none; }
   }
 </style>
 </head>
@@ -411,11 +868,135 @@
   <img id="lightbox-img" src="" alt="Screenshot">
 </div>
 
+<!-- Report Bug Modal -->
+<div class="report-modal-overlay" id="report-modal">
+  <div class="report-modal" role="dialog" aria-labelledby="rm-title">
+
+    <header class="rm-header">
+      <span class="rm-title" id="rm-title">New bug report</span>
+      <button class="rm-close" id="report-modal-close" aria-label="Close">&times;</button>
+    </header>
+
+    <div class="rm-body">
+
+      <!-- What's wrong -->
+      <section class="rm-section">
+        <h3 class="rm-q">What's wrong? <span class="req">*</span></h3>
+        <textarea class="rm-textarea" id="title-input" rows="3"
+          placeholder="e.g. Can't save invoice — error pops up when I click Submit"></textarea>
+      </section>
+
+      <!-- Where -->
+      <section class="rm-section">
+        <h3 class="rm-q">Where did it happen? <span class="req">*</span></h3>
+        <div class="module-grid" id="module-grid">
+          <button type="button" class="module-tile" data-module="keuangan"   data-color="green"><span class="mt-dot"></span><span class="mt-label">Keuangan</span></button>
+          <button type="button" class="module-tile" data-module="inventori"  data-color="amber"><span class="mt-dot"></span><span class="mt-label">Inventori</span></button>
+          <button type="button" class="module-tile" data-module="penjualan"  data-color="blue"><span class="mt-dot"></span><span class="mt-label">Penjualan</span></button>
+          <button type="button" class="module-tile" data-module="pengadaan"  data-color="purple"><span class="mt-dot"></span><span class="mt-label">Pengadaan</span></button>
+          <button type="button" class="module-tile" data-module="manufaktur" data-color="red"><span class="mt-dot"></span><span class="mt-label">Manufaktur</span></button>
+          <button type="button" class="module-tile" data-module="sdm"        data-color="pink"><span class="mt-dot"></span><span class="mt-label">SDM</span></button>
+          <button type="button" class="module-tile" data-module="dokumen"    data-color="slate"><span class="mt-dot"></span><span class="mt-label">Dokumen</span></button>
+        </div>
+        <input type="hidden" id="module-select" value="">
+        <div class="submodule-wrap" id="submodule-wrap">
+          <select class="submodule-select" id="submodule-select">
+            <option value="">Which part? (optional)</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Category -->
+      <section class="rm-section">
+        <h3 class="rm-q">What kind of issue? <span class="req">*</span></h3>
+        <div class="category-pills" id="category-pills">
+          <button type="button" class="cat-pill" data-val="Button/action">Button not working</button>
+          <button type="button" class="cat-pill" data-val="Missing data">Missing / wrong data</button>
+          <button type="button" class="cat-pill" data-val="Missing feature">Missing feature</button>
+          <button type="button" class="cat-pill" data-val="Form">Form won't submit</button>
+          <button type="button" class="cat-pill" data-val="Validation">Validation error</button>
+          <button type="button" class="cat-pill" data-val="UI">UI / display</button>
+          <button type="button" class="cat-pill" data-val="Performance">Slow / performance</button>
+          <button type="button" class="cat-pill" data-val="Crash">Page crash</button>
+          <button type="button" class="cat-pill" data-val="Other">Other</button>
+        </div>
+        <input type="hidden" id="category-select" value="">
+      </section>
+
+      <!-- Screenshot -->
+      <section class="rm-section">
+        <h3 class="rm-q">Screenshot <span class="req">*</span></h3>
+        <div class="rm-upload" id="upload-zone">
+          <input type="file" id="file-input" accept="image/*" style="display:none" />
+          <div class="up-inner">
+            <svg class="up-icon" viewBox="0 0 28 28" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="22" height="18" rx="3"/>
+              <circle cx="19" cy="11" r="2.2"/>
+              <path d="M3 20l6-5 4.5 4.5 3.5-3.5L22 20"/>
+            </svg>
+            <div class="up-text">Tap to add screenshot</div>
+            <div class="up-hint">or paste from clipboard · drag &amp; drop · PNG, JPG</div>
+          </div>
+          <img class="preview-img" id="preview-img" src="" alt="">
+          <button class="up-remove" id="upload-remove" type="button" aria-label="Remove">&times;</button>
+        </div>
+      </section>
+
+      <!-- Optional: reproduction steps -->
+      <details class="rm-more">
+        <summary>Add reproduction steps (optional)</summary>
+        <div class="rm-more-body">
+          <div class="steps-row2">
+            <div class="label">I tried to</div>
+            <div class="chips" id="action-chips">
+              <button type="button" class="chip" data-val="open">open</button>
+              <button type="button" class="chip" data-val="click">click</button>
+              <button type="button" class="chip" data-val="submit a form">submit form</button>
+              <button type="button" class="chip" data-val="save">save</button>
+              <button type="button" class="chip" data-val="delete">delete</button>
+              <button type="button" class="chip" data-val="search / filter">search / filter</button>
+              <button type="button" class="chip" data-val="load / refresh">load / refresh</button>
+              <button type="button" class="chip" data-val="navigate to">navigate to</button>
+            </div>
+            <input id="action-detail" type="text" placeholder="what exactly? (optional)">
+          </div>
+
+          <div class="steps-row2">
+            <div class="label">And it</div>
+            <div class="chips" id="result-chips">
+              <button type="button" class="chip" data-val="nothing happened">nothing happened</button>
+              <button type="button" class="chip" data-val="showed an error">showed an error</button>
+              <button type="button" class="chip" data-val="showed wrong data">showed wrong data</button>
+              <button type="button" class="chip" data-val="crashed / froze">crashed / froze</button>
+              <button type="button" class="chip" data-val="was disabled / greyed out">was disabled</button>
+              <button type="button" class="chip" data-val="was missing entirely">was missing</button>
+            </div>
+          </div>
+
+          <div class="steps-row2">
+            <div class="label">I expected</div>
+            <input id="expected-detail" type="text" placeholder="what should have happened?">
+          </div>
+
+          <div class="steps-preview-box" id="steps-preview"></div>
+        </div>
+      </details>
+
+      <input type="hidden" id="steps-input">
+    </div>
+
+    <footer class="rm-footer">
+      <button class="rm-submit" id="submit-btn" disabled>Submit bug</button>
+      <div class="rm-missing" id="rm-missing"></div>
+    </footer>
+  </div>
+</div>
+
 <!-- Main App (hidden until login) -->
 <div class="page" id="main-view" style="display:none">
 
   <!-- Sidebar -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-top">
       <div class="sidebar-logo">
         <div class="logo-mark">
@@ -423,61 +1004,62 @@
         </div>
         <span class="logo-name">ERP Feedback</span>
       </div>
+      <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
+        <svg viewBox="0 0 16 16"><path d="M10 4l-4 4 4 4"/></svg>
+      </button>
     </div>
 
     <div class="nav-section">
       <div class="nav-label">Overview</div>
-      <div class="nav-item active" data-view="dashboard">
+      <div class="nav-item active" data-view="dashboard" data-tip="Dashboard">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
-        Dashboard
+        <span class="nav-text">Dashboard</span>
       </div>
     </div>
 
     <div class="nav-section">
       <div class="nav-label">Reports</div>
-      <div class="nav-item" data-view="open">
+      <div class="nav-item" data-view="open" data-tip="Open bugs">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/></svg>
-        Open
-        <span class="nav-badge red" id="badge-open">0</span>
+        <span class="nav-text">Open</span>
+        <span class="nav-badge red zero" id="badge-open">0</span>
       </div>
-      <div class="nav-item" data-view="needs-verify">
+      <div class="nav-item" data-view="needs-verify" data-tip="Needs verify">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M3 14c0-3 10-3 10 0"/></svg>
-        Needs verify
-        <span class="nav-badge" id="badge-needs-verify">0</span>
+        <span class="nav-text">Needs verify</span>
+        <span class="nav-badge zero" id="badge-needs-verify">0</span>
       </div>
-      <div class="nav-item" data-view="verified">
+      <div class="nav-item" data-view="verified" data-tip="Verified">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 8l3 3 7-7"/></svg>
-        Verified
-        <span class="nav-badge" id="badge-verified">0</span>
+        <span class="nav-text">Verified</span>
+        <span class="nav-badge zero" id="badge-verified">0</span>
       </div>
-      <div class="nav-item" data-view="all">
+      <div class="nav-item" data-view="all" data-tip="All bugs">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6" stroke-linecap="round"/></svg>
-        All bugs
-        <span class="nav-badge" id="badge-all">0</span>
+        <span class="nav-text">All bugs</span>
+        <span class="nav-badge zero" id="badge-all">0</span>
       </div>
     </div>
 
     <div class="sidebar-divider"></div>
 
     <!-- Module Progress -->
-    <div class="nav-section">
+    <div class="nav-section nav-section-progress">
       <div class="nav-label">Module progress</div>
     </div>
-    <div class="progress-section" id="module-progress">
-      <!-- rendered by JS -->
-    </div>
+    <div class="progress-section" id="module-progress"></div>
 
     <div class="nav-section">
       <div class="nav-label">Tools</div>
-      <a class="nav-item" href="../fixer/">
+      <a class="nav-item" href="../fixer/" data-tip="Fixer view">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="3" width="5" height="10" rx="1"/><rect x="9" y="3" width="5" height="5" rx="1"/><rect x="9" y="10" width="5" height="3" rx="1"/></svg>
-        Fixer view →
+        <span class="nav-text">Fixer view</span>
       </a>
     </div>
 
     <div class="sidebar-footer">
       <div class="avatar" id="user-avatar">?</div>
-      <div>
+      <div class="sidebar-footer-info">
         <div class="footer-name" id="footer-name">—</div>
         <div class="footer-role">Reporter</div>
       </div>
@@ -487,139 +1069,60 @@
   <!-- Main Content -->
   <main class="main">
 
-    <!-- Page Header -->
+    <!-- Page Header (tighter) -->
     <div class="page-header">
-      <div class="greeting-row">
-        <div class="avatar-lg" id="avatar-lg">?</div>
+      <div>
         <h1 id="greeting-h1">Hey —</h1>
+        <p class="page-sub" id="page-sub">Report a bug or check status</p>
       </div>
-      <p class="page-sub" id="page-sub">Report a bug or check the status of your reports.</p>
+      <button class="report-btn" id="open-report-btn">
+        <svg viewBox="0 0 16 16"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+        Report Bug
+      </button>
     </div>
 
-    <!-- New Bug Report Form (Dashboard view only) -->
-    <div class="card" id="form-card">
-      <div class="card-label">New bug report</div>
-
-      <div class="field">
-        <label class="field-label">What went wrong? <span class="required-star">*</span></label>
-        <textarea class="field-input" id="title-input" placeholder="Describe the issue — what happened, what you expected..."></textarea>
-      </div>
-
-      <div class="field">
-        <label class="field-label">Steps to reproduce <span class="required-star">*</span></label>
-        <div class="steps-builder" id="steps-builder">
-
-          <div class="steps-row">
-            <div class="steps-row-label">I tried to</div>
-            <div class="steps-chips" id="action-chips">
-              <button type="button" class="steps-chip" data-val="open">open</button>
-              <button type="button" class="steps-chip" data-val="click">click</button>
-              <button type="button" class="steps-chip" data-val="submit a form">submit form</button>
-              <button type="button" class="steps-chip" data-val="save">save</button>
-              <button type="button" class="steps-chip" data-val="delete">delete</button>
-              <button type="button" class="steps-chip" data-val="search / filter">search / filter</button>
-              <button type="button" class="steps-chip" data-val="load / refresh">load / refresh</button>
-              <button type="button" class="steps-chip" data-val="navigate to">navigate to</button>
-            </div>
-            <input class="steps-detail" id="action-detail" type="text" placeholder="what exactly? (optional)">
-          </div>
-
-          <div class="steps-row">
-            <div class="steps-row-label">It</div>
-            <div class="steps-chips" id="result-chips">
-              <button type="button" class="steps-chip" data-val="nothing happened">nothing happened</button>
-              <button type="button" class="steps-chip" data-val="showed an error">showed an error</button>
-              <button type="button" class="steps-chip" data-val="showed wrong data">showed wrong data</button>
-              <button type="button" class="steps-chip" data-val="crashed / froze">crashed / froze</button>
-              <button type="button" class="steps-chip" data-val="was disabled / greyed out">was disabled</button>
-              <button type="button" class="steps-chip" data-val="was missing entirely">was missing</button>
-            </div>
-          </div>
-
-          <div class="steps-row">
-            <div class="steps-row-label">I expected</div>
-            <input class="steps-detail" id="expected-detail" type="text" placeholder="what should have happened?">
-          </div>
-
-          <div class="steps-preview" id="steps-preview"></div>
-        </div>
-        <!-- Hidden value consumed by submit -->
-        <input type="hidden" id="steps-input">
-      </div>
-
-      <div class="two-col">
-        <div class="field">
-          <label class="field-label">Module <span class="required-star">*</span></label>
-          <div class="select-wrapper">
-            <select class="field-select" id="module-select">
-              <option value="">Select module...</option>
-              <option value="keuangan">Keuangan</option>
-              <option value="inventori">Inventori</option>
-              <option value="penjualan">Penjualan &amp; CRM</option>
-              <option value="pengadaan">Pengadaan</option>
-              <option value="manufaktur">Manufaktur</option>
-              <option value="sdm">SDM</option>
-              <option value="dokumen">Dokumen</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="field" id="submodule-field">
-          <label class="field-label">Sub-module</label>
-          <div class="select-wrapper">
-            <select class="field-select" id="submodule-select">
-              <option value="">Select sub-module...</option>
-            </select>
-          </div>
+    <!-- Unified toolbar: view toggle + filters -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="view-toggle">
+          <button class="view-toggle-btn active" data-mode="list">
+            <svg viewBox="0 0 12 12"><line x1="0" y1="2" x2="12" y2="2"/><line x1="0" y1="6" x2="12" y2="6"/><line x1="0" y1="10" x2="12" y2="10"/></svg>
+            List
+          </button>
+          <button class="view-toggle-btn" data-mode="kanban">
+            <svg viewBox="0 0 12 12"><rect x="0" y="0" width="3.5" height="12" rx="0.5"/><rect x="4.25" y="0" width="3.5" height="8" rx="0.5"/><rect x="8.5" y="0" width="3.5" height="10" rx="0.5"/></svg>
+            Kanban
+          </button>
         </div>
       </div>
-
-      <div class="field">
-        <label class="field-label">Category <span class="required-star">*</span></label>
-        <div class="select-wrapper">
-          <select class="field-select" id="category-select">
-            <option value="">Select category...</option>
-            <option value="Button/action">Button / action not working</option>
-            <option value="Missing data">Missing or wrong data</option>
-            <option value="Missing feature">Missing action / feature</option>
-            <option value="Form">Form not submitting</option>
-            <option value="Validation">Validation error</option>
-            <option value="UI">UI / display issue</option>
-            <option value="Performance">Slow / performance issue</option>
-            <option value="Crash">Page crash / error</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
+      <div class="toolbar-right">
+        <select class="filter-select" id="filter-reporter">
+          <option value="">All reporters</option>
+        </select>
+        <select class="filter-select" id="filter-module">
+          <option value="">All modules</option>
+          <option value="Keuangan">Keuangan</option>
+          <option value="Inventori">Inventori</option>
+          <option value="Penjualan">Penjualan</option>
+          <option value="Pengadaan">Pengadaan</option>
+          <option value="Manufaktur">Manufaktur</option>
+          <option value="SDM">SDM</option>
+          <option value="Dokumen">Dokumen</option>
+        </select>
+        <input class="filter-search" id="filter-search" type="text" placeholder="Search...">
       </div>
-
-      <div class="field">
-        <label class="field-label">Screenshot <span class="required-star">*</span></label>
-        <div class="upload-zone" id="upload-zone">
-          <input type="file" id="file-input" accept="image/*" style="display:none" />
-          <div class="upload-content">
-            <svg class="upload-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.3">
-              <rect x="3" y="5" width="22" height="18" rx="3"/>
-              <circle cx="19" cy="11" r="2.2"/>
-              <path d="M3 20l6-5 4.5 4.5 3.5-3.5L22 20"/>
-            </svg>
-            <div class="upload-text">Drop, paste, or click to add screenshot</div>
-            <div class="upload-hint">1 screenshot per report · PNG, JPG</div>
-          </div>
-          <img class="preview-img" id="preview-img" src="" alt="">
-          <button class="upload-remove" id="upload-remove" type="button">&times;</button>
-        </div>
-      </div>
-
-      <button class="submit-btn" id="submit-btn" disabled>Submit report</button>
     </div>
 
-    <!-- Bug List Card -->
+    <!-- Section heading (small, above list) -->
+    <div class="list-heading">
+      <span id="feed-title">All bugs</span>
+      <span class="list-heading-count" id="feed-count">0 items</span>
+    </div>
+
+    <!-- Bug Browser -->
     <div class="card">
-      <div class="list-header">
-        <span class="list-title" id="feed-title">Your reports</span>
-        <span class="list-count" id="feed-count">0 total</span>
-      </div>
-      <div id="feed"></div>
+      <div id="list-view"></div>
+      <div id="kanban-view" style="display:none"></div>
     </div>
 
   </main>
@@ -632,7 +1135,7 @@
   'use strict';
 
   /* ============================================================
-     SUBMODULES (from darren-bug-tracker-v3.html)
+     SUBMODULES
      ============================================================ */
   const SUBMODULES = {
     keuangan: [
@@ -667,7 +1170,6 @@
     ],
   };
 
-  /* Human-readable module names */
   const MODULE_LABELS = {
     keuangan:  'Keuangan',
     inventori: 'Inventori',
@@ -678,8 +1180,9 @@
     dokumen:   'Dokumen',
   };
 
-  /* Module order for progress section */
   const MODULE_ORDER = ['Keuangan','Inventori','Penjualan','Pengadaan','Manufaktur','SDM','Dokumen'];
+
+  const KANBAN_STATUSES = ['Open', 'In Progress', 'Fixed', 'Verified', 'Closed'];
 
   /* ============================================================
      State
@@ -687,12 +1190,15 @@
   let currentName       = localStorage.getItem('reporter-name') || '';
   let myBugs            = [];
   let allBugs           = [];
-  let activeView        = 'dashboard';
-  let expandedIds       = new Set();  // allow multiple expanded
+  let activeView        = 'dashboard';   // sidebar nav: dashboard | open | needs-verify | verified | all
+  let viewMode          = 'list';        // list | kanban
+  let filterReporter    = '';
+  let filterModule      = '';
+  let filterSearch      = '';
+  let expandedIds       = new Set();
   let screenshotFile    = null;
   let screenshotDataURL = null;
   let isSubmitting      = false;
-  let collapsedGroups   = new Set();
   let channel           = null;
 
   /* ============================================================
@@ -704,10 +1210,10 @@
   const loginBtn        = $('login-btn');
   const mainView        = $('main-view');
   const titleInput      = $('title-input');
-  const stepsInput      = $('steps-input');   // hidden, assembled by builder
+  const stepsInput      = $('steps-input');
   const stepsPreview    = $('steps-preview');
   const moduleSelect    = $('module-select');
-  const submoduleField  = $('submodule-field');
+  const submoduleWrap   = $('submodule-wrap');
   const submoduleSelect = $('submodule-select');
   const categorySelect  = $('category-select');
   const uploadZone      = $('upload-zone');
@@ -715,8 +1221,9 @@
   const previewImg      = $('preview-img');
   const uploadRemove    = $('upload-remove');
   const submitBtn       = $('submit-btn');
-  const formCard        = $('form-card');
-  const feedEl          = $('feed');
+  const reportModal     = $('report-modal');
+  const listViewEl      = $('list-view');
+  const kanbanViewEl    = $('kanban-view');
   const feedTitle       = $('feed-title');
   const feedCount       = $('feed-count');
   const lightbox        = $('lightbox');
@@ -727,27 +1234,20 @@
      ============================================================ */
   function statusClass(s) {
     return {
-      'Open':        's-open',
-      'In Progress': 's-in-progress',
-      'Fixed':       's-fixed',
-      'Verified':    's-verified',
-      'Closed':      's-closed',
+      'Open': 's-open', 'In Progress': 's-in-progress',
+      'Fixed': 's-fixed', 'Verified': 's-verified', 'Closed': 's-closed',
     }[s] || 's-open';
   }
 
-  /* Extract top-level module segment for grouping */
   function topModule(moduleStr) {
     if (!moduleStr) return null;
     return moduleStr.split(' / ')[0].trim();
   }
 
-  /* Map stored module name to one of our 7 canonical groups */
   function canonicalModule(moduleStr) {
     if (!moduleStr) return null;
     const top = topModule(moduleStr).toLowerCase();
-    // Direct key match
     if (SUBMODULES[top]) return MODULE_LABELS[top] || top;
-    // Fuzzy match against labels
     for (const [key, label] of Object.entries(MODULE_LABELS)) {
       if (top.startsWith(key) || top.includes(key)) return label;
     }
@@ -764,7 +1264,6 @@
     function buildStepsValue() {
       const actionDetail   = $('action-detail').value.trim();
       const expectedDetail = $('expected-detail').value.trim();
-
       if (!selAction && !selResult && !expectedDetail) return '';
 
       let sentence = '';
@@ -795,13 +1294,13 @@
     }
 
     $('action-chips').addEventListener('click', e => {
-      const chip = e.target.closest('.steps-chip');
+      const chip = e.target.closest('.chip');
       if (!chip) return;
       if (selAction === chip.dataset.val) {
         selAction = '';
         chip.classList.remove('active');
       } else {
-        $('action-chips').querySelectorAll('.steps-chip').forEach(c => c.classList.remove('active'));
+        $('action-chips').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
         selAction = chip.dataset.val;
         chip.classList.add('active');
       }
@@ -809,13 +1308,13 @@
     });
 
     $('result-chips').addEventListener('click', e => {
-      const chip = e.target.closest('.steps-chip');
+      const chip = e.target.closest('.chip');
       if (!chip) return;
       if (selResult === chip.dataset.val) {
         selResult = '';
         chip.classList.remove('active');
       } else {
-        $('result-chips').querySelectorAll('.steps-chip').forEach(c => c.classList.remove('active'));
+        $('result-chips').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
         selResult = chip.dataset.val;
         chip.classList.add('active');
       }
@@ -827,7 +1326,28 @@
   })();
 
   /* ============================================================
-     1. Login
+     1. Report Modal
+     ============================================================ */
+  function openReportModal() {
+    reportModal.classList.add('show');
+  }
+  function closeReportModal() {
+    reportModal.classList.remove('show');
+  }
+
+  $('open-report-btn').addEventListener('click', openReportModal);
+  $('report-modal-close').addEventListener('click', closeReportModal);
+
+  reportModal.addEventListener('click', e => {
+    if (e.target === reportModal) closeReportModal();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && reportModal.classList.contains('show')) closeReportModal();
+  });
+
+  /* ============================================================
+     2. Login
      ============================================================ */
   REPORTERS.forEach(name => {
     const opt = document.createElement('option');
@@ -850,18 +1370,30 @@
   });
 
   /* ============================================================
-     2. Nav / View switching
+     3. Nav / View switching
      ============================================================ */
   document.querySelectorAll('.nav-item[data-view]').forEach(item => {
     item.addEventListener('click', () => switchView(item.dataset.view));
   });
 
+  /* Sidebar collapse — Claude-style rail */
+  (function initSidebarToggle() {
+    const sb = document.getElementById('sidebar');
+    const btn = document.getElementById('sidebar-toggle');
+    if (!sb || !btn) return;
+    if (localStorage.getItem('sidebar-collapsed') === '1') sb.classList.add('collapsed');
+    btn.addEventListener('click', () => {
+      sb.classList.toggle('collapsed');
+      localStorage.setItem('sidebar-collapsed', sb.classList.contains('collapsed') ? '1' : '0');
+    });
+  })();
+
   const VIEW_META = {
-    dashboard:    { sub: 'Report a bug or check the status of your reports.',   title: 'Your reports',       empty: 'No bugs reported yet',        emptySub: "When you report a bug it'll show up here with live status updates." },
-    open:         { sub: 'Your open bugs waiting to be fixed.',                  title: 'Open bugs',          empty: 'No open bugs',                emptySub: 'All your open bugs have been resolved.' },
-    'needs-verify':{ sub: 'Fixed bugs waiting for your verification.',           title: 'Needs verification', empty: 'Nothing to verify',            emptySub: "Bugs marked Fixed by the fixer will appear here." },
-    verified:     { sub: 'Bugs you have verified as resolved.',                  title: 'Verified bugs',      empty: 'No verified bugs yet',         emptySub: "Bugs you've confirmed as fixed will appear here." },
-    all:          { sub: 'All bugs you have reported.',                          title: 'All your bugs',      empty: 'No bugs yet',                  emptySub: "You haven't reported any bugs yet." },
+    dashboard:     { sub: 'Report a bug or check status',                     title: 'All bugs',           empty: 'No bugs reported yet',        emptySub: "When bugs are reported they'll show up here." },
+    open:          { sub: 'Open bugs waiting to be fixed.',                    title: 'Open bugs',          empty: 'No open bugs',                emptySub: 'All open bugs have been resolved.' },
+    'needs-verify':{ sub: 'Fixed bugs waiting for verification.',              title: 'Needs verification', empty: 'Nothing to verify',            emptySub: "Bugs marked Fixed will appear here." },
+    verified:      { sub: 'Bugs verified as resolved.',                        title: 'Verified bugs',      empty: 'No verified bugs yet',         emptySub: "Confirmed fixes will appear here." },
+    all:           { sub: 'All reported bugs.',                                title: 'All bugs',           empty: 'No bugs yet',                  emptySub: "No bugs have been reported yet." },
   };
 
   function switchView(view) {
@@ -872,30 +1404,68 @@
       el.classList.toggle('active', el.dataset.view === view)
     );
 
-    formCard.style.display = view === 'dashboard' ? '' : 'none';
     $('page-sub').textContent = (VIEW_META[view] || VIEW_META.dashboard).sub;
-    renderFeed();
+    renderBugs();
   }
 
   /* ============================================================
-     3. Module / Sub-module picker
+     3b. View toggle (list / kanban)
      ============================================================ */
-  moduleSelect.addEventListener('change', () => {
-    const val = moduleSelect.value;
+  document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      viewMode = btn.dataset.mode;
+      document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === viewMode));
+      renderBugs();
+    });
+  });
+
+  /* ============================================================
+     3c. Filters
+     ============================================================ */
+  // Populate reporter filter
+  REPORTERS.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = opt.textContent = name;
+    $('filter-reporter').appendChild(opt);
+  });
+
+  $('filter-reporter').addEventListener('change', e => { filterReporter = e.target.value; renderBugs(); });
+  $('filter-module').addEventListener('change', e => { filterModule = e.target.value; renderBugs(); });
+  $('filter-search').addEventListener('input', e => { filterSearch = e.target.value.trim().toLowerCase(); renderBugs(); });
+
+  /* ============================================================
+     4. Module tiles + Sub-module picker
+     ============================================================ */
+  function setModule(val) {
+    moduleSelect.value = val || '';
+
+    document.querySelectorAll('#module-grid .module-tile').forEach(t => {
+      t.classList.toggle('active', t.dataset.module === val);
+    });
+
     const groups = SUBMODULES[val];
     if (val && groups) {
-      let html = '<option value="">Select sub-module...</option>';
+      let html = '<option value="">Which part? (optional)</option>';
       groups.forEach(({ group, items }) => {
         html += `<optgroup label="${esc(group)}">${items.map(i => `<option value="${esc(i)}">${esc(i)}</option>`).join('')}</optgroup>`;
       });
       submoduleSelect.innerHTML = html;
-      submoduleField.classList.add('visible');
+      submoduleWrap.classList.add('visible');
     } else {
-      submoduleField.classList.remove('visible');
-      submoduleSelect.innerHTML = '<option value="">Select sub-module...</option>';
+      submoduleWrap.classList.remove('visible');
+      submoduleSelect.innerHTML = '<option value="">Which part? (optional)</option>';
     }
     updateSubmitState();
+  }
+
+  document.querySelectorAll('#module-grid .module-tile').forEach(tile => {
+    tile.addEventListener('click', () => {
+      const val = tile.dataset.module;
+      setModule(val === moduleSelect.value ? '' : val);
+    });
   });
+
+  submoduleSelect.addEventListener('change', updateSubmitState);
 
   function getModuleValue() {
     const mod = moduleSelect.value;
@@ -905,11 +1475,27 @@
     return sub ? `${label} / ${sub}` : label;
   }
 
+  /* ── Category pills ── */
+  function setCategory(val) {
+    categorySelect.value = val || '';
+    document.querySelectorAll('#category-pills .cat-pill').forEach(p => {
+      p.classList.toggle('active', p.dataset.val === val);
+    });
+    updateSubmitState();
+  }
+
+  document.querySelectorAll('#category-pills .cat-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const val = pill.dataset.val;
+      setCategory(val === categorySelect.value ? '' : val);
+    });
+  });
+
   /* ============================================================
-     4. Screenshot
+     5. Screenshot
      ============================================================ */
   uploadZone.addEventListener('click', e => {
-    if (!e.target.closest('.upload-remove') && !screenshotDataURL) fileInput.click();
+    if (!e.target.closest('.up-remove') && !screenshotDataURL) fileInput.click();
   });
 
   fileInput.addEventListener('change', () => {
@@ -925,6 +1511,7 @@
   });
 
   document.addEventListener('paste', e => {
+    if (!reportModal.classList.contains('show')) return;
     if (!e.clipboardData?.items) return;
     for (const item of e.clipboardData.items) {
       if (item.type.startsWith('image/')) { e.preventDefault(); handleFile(item.getAsFile()); break; }
@@ -959,27 +1546,43 @@
   }
 
   /* ============================================================
-     5. Submit state
+     6. Submit state
      ============================================================ */
   titleInput.addEventListener('input', updateSubmitState);
-  categorySelect.addEventListener('change', updateSubmitState);
+
   function updateSubmitState() {
     const hasTitle      = !!titleInput.value.trim();
     const hasModule     = !!moduleSelect.value;
     const hasCategory   = !!categorySelect.value;
-    const hasSteps      = !!stepsInput.value.trim();
     const hasScreenshot = !!screenshotDataURL;
-    submitBtn.disabled = !(hasTitle && hasModule && hasCategory && hasSteps && hasScreenshot) || isSubmitting;
+    const ready = hasTitle && hasModule && hasCategory && hasScreenshot;
+    submitBtn.disabled = !ready || isSubmitting;
+
+    const missingEl = $('rm-missing');
+    if (missingEl) {
+      if (ready || isSubmitting) {
+        missingEl.classList.remove('show');
+        missingEl.textContent = '';
+      } else {
+        const missing = [];
+        if (!hasTitle) missing.push('description');
+        if (!hasModule) missing.push('module');
+        if (!hasCategory) missing.push('category');
+        if (!hasScreenshot) missing.push('screenshot');
+        missingEl.textContent = `Still needed: ${missing.join(', ')}`;
+        missingEl.classList.add('show');
+      }
+    }
   }
 
   /* ============================================================
-     6. Form submission
+     7. Form submission
      ============================================================ */
   submitBtn.addEventListener('click', handleSubmit);
 
   async function handleSubmit() {
     const title = titleInput.value.trim();
-    if (!title || !moduleSelect.value || !categorySelect.value || !stepsInput.value.trim() || !screenshotDataURL || isSubmitting) return;
+    if (!title || !moduleSelect.value || !categorySelect.value || !screenshotDataURL || isSubmitting) return;
 
     isSubmitting = true;
     submitBtn.disabled = true;
@@ -996,16 +1599,14 @@
         screenshot_url = urlData.publicUrl;
       }
 
-      const category = categorySelect.value;
-      const steps    = stepsInput.value.trim();
+      const category  = categorySelect.value;
+      const steps     = stepsInput.value.trim();
       const moduleVal = getModuleValue();
 
-      /* Build notes field: Category + Steps lines */
       const notesParts = [];
       if (category) notesParts.push(`Category: ${category}`);
       if (steps)    notesParts.push(`Steps: ${steps}`);
 
-      /* Build insert payload */
       const payload = {
         title,
         module:        moduleVal,
@@ -1016,12 +1617,10 @@
         notes:         notesParts.length ? notesParts.join('\n') : null,
       };
 
-      /* Try to also use a dedicated category column if it exists */
-      try { payload.category = category || null; } catch(_) { /* ignore */ }
+      try { payload.category = category || null; } catch(_) {}
 
       const { data, error } = await sb.from('bugs').insert(payload).select().single();
       if (error) {
-        /* If category column doesn't exist, retry without it */
         if (error.message && error.message.includes('category')) {
           delete payload.category;
           const retry = await sb.from('bugs').insert(payload).select().single();
@@ -1049,13 +1648,13 @@
       await fetch('https://ntfy.sh/erp-bugs-richiekidnovell', {
         method: 'POST',
         headers: {
-          'Title': `🐛 Bug from ${bug.reporter}`,
+          'Title': `Bug from ${bug.reporter}`,
           'Priority': 'high',
           'Tags': 'bug',
         },
         body: `${bug.module || 'No module'}\n"${bug.title}"`,
       });
-    } catch (_) { /* silent — notification failure should not block the user */ }
+    } catch (_) {}
   }
 
   function handleInsertSuccess(data) {
@@ -1066,26 +1665,30 @@
       allBugs.unshift(data);
       updateBadges();
       renderModuleProgress();
-      renderFeed(data.id);
+      renderBugs(data.id);
     }
     // Reset form
     titleInput.value = '';
     stepsInput.value = '';
-    // Reset steps builder
-    document.querySelectorAll('#action-chips .steps-chip, #result-chips .steps-chip').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('#action-chips .chip, #result-chips .chip').forEach(c => c.classList.remove('active'));
     if ($('action-detail'))   $('action-detail').value = '';
     if ($('expected-detail')) $('expected-detail').value = '';
     stepsPreview.classList.remove('show');
-    moduleSelect.value = '';
-    categorySelect.value = '';
-    submoduleField.classList.remove('visible');
-    submoduleSelect.innerHTML = '<option value="">Select sub-module...</option>';
+    setModule('');
+    setCategory('');
     clearScreenshot();
+    // Collapse the optional "add reproduction steps" section
+    document.querySelectorAll('.rm-more[open]').forEach(d => d.removeAttribute('open'));
+    // Scroll body back to top
+    const rmBody = document.querySelector('.rm-body');
+    if (rmBody) rmBody.scrollTop = 0;
     updateSubmitState();
+    // Close modal
+    closeReportModal();
   }
 
   /* ============================================================
-     7. Load bugs
+     8. Load bugs
      ============================================================ */
   async function loadMyBugs() {
     const { data, error } = await sb.from('bugs').select('*')
@@ -1103,7 +1706,7 @@
   }
 
   /* ============================================================
-     8. Badge counts
+     9. Badge counts (still uses myBugs — logged-in user only)
      ============================================================ */
   function updateBadges() {
     const open        = myBugs.filter(b => b.status === 'Open').length;
@@ -1111,24 +1714,29 @@
     const verified    = myBugs.filter(b => ['Verified','Closed'].includes(b.status)).length;
     const all         = myBugs.length;
 
-    $('badge-open').textContent         = open;
-    $('badge-needs-verify').textContent = needsVerify;
-    $('badge-verified').textContent     = verified;
-    $('badge-all').textContent          = all;
+    const setBadge = (id, count, red) => {
+      const el = $(id);
+      el.textContent = count;
+      let cls = 'nav-badge';
+      if (red && count > 0) cls += ' red';
+      if (count === 0) cls += ' zero';
+      el.className = cls;
+    };
 
-    $('badge-open').className    = 'nav-badge' + (open > 0 ? ' red' : '');
-    $('badge-needs-verify').className = 'nav-badge' + (needsVerify > 0 ? ' red' : '');
+    setBadge('badge-open', open, true);
+    setBadge('badge-needs-verify', needsVerify, true);
+    setBadge('badge-verified', verified, false);
+    setBadge('badge-all', all, false);
   }
 
   /* ============================================================
-     9. Module progress
+     10. Module progress
      ============================================================ */
   function renderModuleProgress() {
     const container = $('module-progress');
     if (!container) return;
 
-    /* Count bugs per canonical module from ALL bugs */
-    const stats = {}; // { moduleName: { total, open } }
+    const stats = {};
     allBugs.forEach(b => {
       const mod = canonicalModule(b.module);
       if (!mod) return;
@@ -1137,13 +1745,9 @@
       if (b.status === 'Open' || b.status === 'In Progress') stats[mod].open++;
     });
 
-    /* Filter to modules that have bugs, in canonical order, max 7 */
     const modules = MODULE_ORDER.filter(m => stats[m] && stats[m].total > 0).slice(0, 7);
 
-    if (modules.length === 0) {
-      container.innerHTML = '';
-      return;
-    }
+    if (modules.length === 0) { container.innerHTML = ''; return; }
 
     let html = '';
     modules.forEach(mod => {
@@ -1169,44 +1773,63 @@
   }
 
   /* ============================================================
-     10. Feed rendering
+     11. Filtered bugs
      ============================================================ */
-  function getDisplayBugs() {
+  function getFilteredBugs() {
+    // Start from allBugs, apply sidebar status filter
+    let bugs = allBugs;
+
     switch (activeView) {
-      case 'dashboard':    return myBugs;
-      case 'open':         return myBugs.filter(b => b.status === 'Open');
-      case 'needs-verify': return myBugs.filter(b => b.status === 'Fixed');
-      case 'verified':     return myBugs.filter(b => ['Verified','Closed'].includes(b.status));
-      case 'all':          return myBugs;
-      default:             return myBugs;
+      case 'open':         bugs = bugs.filter(b => b.status === 'Open'); break;
+      case 'needs-verify': bugs = bugs.filter(b => b.status === 'Fixed'); break;
+      case 'verified':     bugs = bugs.filter(b => ['Verified','Closed'].includes(b.status)); break;
+      // dashboard and all show everything
+    }
+
+    // Toolbar filters
+    if (filterReporter) {
+      bugs = bugs.filter(b => b.reporter === filterReporter);
+    }
+    if (filterModule) {
+      bugs = bugs.filter(b => {
+        const canon = canonicalModule(b.module);
+        return canon && canon.toLowerCase().startsWith(filterModule.toLowerCase());
+      });
+    }
+    if (filterSearch) {
+      bugs = bugs.filter(b => b.title && b.title.toLowerCase().includes(filterSearch));
+    }
+
+    return bugs;
+  }
+
+  /* ============================================================
+     12. Render bugs (list + kanban)
+     ============================================================ */
+  const PLACEHOLDER_SVG = `<svg viewBox="0 0 28 28"><rect x="3" y="5" width="22" height="18" rx="2"/><path d="M3 18l6-5 4 4 3-3 6 5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="19" cy="10" r="2"/></svg>`;
+
+  function renderBugs(newId) {
+    const meta = VIEW_META[activeView] || VIEW_META.dashboard;
+    const bugs = getFilteredBugs();
+
+    feedTitle.textContent = meta.title;
+    feedCount.textContent = `${bugs.length} item${bugs.length === 1 ? '' : 's'}`;
+
+    if (viewMode === 'list') {
+      listViewEl.style.display = '';
+      kanbanViewEl.style.display = 'none';
+      renderListView(bugs, meta, newId);
+    } else {
+      listViewEl.style.display = 'none';
+      kanbanViewEl.style.display = '';
+      renderKanbanView(bugs, meta);
     }
   }
 
-  function getDateKey(iso) {
-    const d = new Date(iso);
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().split('T')[0];
-  }
-
-  function getDateLabel(key) {
-    const today = new Date();
-    const todayKey = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString().split('T')[0];
-    const yest = new Date(today); yest.setDate(yest.getDate() - 1);
-    const yestKey  = new Date(yest.getFullYear(), yest.getMonth(), yest.getDate()).toISOString().split('T')[0];
-    if (key === todayKey) return 'Today';
-    if (key === yestKey)  return 'Yesterday';
-    const d = new Date(key + 'T12:00:00');
-    return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
-  }
-
-  function renderFeed(newId) {
-    const meta = VIEW_META[activeView] || VIEW_META.dashboard;
-    const bugs = getDisplayBugs();
-
-    feedTitle.textContent = meta.title;
-    feedCount.textContent = `${bugs.length} total`;
-
+  /* ---- List View ---- */
+  function renderListView(bugs, meta, newId) {
     if (bugs.length === 0) {
-      feedEl.innerHTML = `
+      listViewEl.innerHTML = `
         <div class="empty-state">
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.35">
             <circle cx="18" cy="18" r="14"/>
@@ -1220,61 +1843,48 @@
       return;
     }
 
-    /* Group by date */
-    const grouped = new Map();
-    bugs.forEach(b => {
-      const k = getDateKey(b.created_at);
-      if (!grouped.has(k)) grouped.set(k, []);
-      grouped.get(k).push(b);
-    });
-
     let html = '';
-    for (const [dateKey, dateBugs] of grouped) {
-      const isCollapsed = collapsedGroups.has(dateKey);
-      html += `<div class="group-wrap" data-date-key="${esc(dateKey)}">`;
-      html += `<div class="group-row">
-        <span class="group-name">${esc(getDateLabel(dateKey))}</span>
-        <span class="group-n">${dateBugs.length}</span>
-      </div>`;
-      html += `<div class="group-body${isCollapsed ? ' collapsed' : ''}">`;
-      dateBugs.forEach(b => { html += bugRowHTML(b, String(b.id) === String(newId)); });
-      html += '</div></div>';
-    }
-
-    feedEl.innerHTML = html;
-    bindFeedEvents();
+    bugs.forEach(b => { html += bugRowHTML(b, String(b.id) === String(newId)); });
+    listViewEl.innerHTML = html;
+    bindListEvents(listViewEl);
   }
-
-  /* ---- Placeholder SVG for compare grid ---- */
-  const PLACEHOLDER_SVG = `<svg viewBox="0 0 28 28"><rect x="3" y="5" width="22" height="18" rx="2"/><path d="M3 18l6-5 4 4 3-3 6 5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="19" cy="10" r="2"/></svg>`;
 
   function bugRowHTML(bug, isNew) {
     const sc    = statusClass(bug.status);
     const isExp = expandedIds.has(String(bug.id));
+    const needsVerify = bug.status === 'Fixed' && bug.reporter === currentName;
 
-    /* Module tags */
-    const modTags = bug.module
-      ? bug.module.split(' / ').map(p => `<span class="tag">${esc(p)}</span>`).join('')
+    const modPath = bug.module
+      ? bug.module.split(' / ').map(esc).join(' <span class="bug-sep">›</span> ')
       : '';
 
-    const statusLabel = bug.status === 'Fixed' ? 'Fixed — tap to verify' : esc(bug.status);
-    const statusTag   = `<span class="status-pill ${sc}"><span class="dot"></span>${statusLabel}</span>`;
+    const bugIdStr   = bug.bug_id ? esc(bug.bug_id) : '';
+    const reporter   = esc(bug.reporter || 'Unknown');
 
-    /* ---- Verify panel (Fixed bugs) ---- */
+    const metaParts = [];
+    if (bugIdStr) metaParts.push(`<span class="bug-id">${bugIdStr}</span>`);
+    metaParts.push(`<span class="bug-reporter">${reporter}</span>`);
+    if (modPath)  metaParts.push(`<span class="bug-mods">${modPath}</span>`);
+    const metaHTML = metaParts.join('<span class="bug-sep">·</span>');
+
+    const actionHint = needsVerify
+      ? `<span class="bug-action-hint">Tap to verify</span>`
+      : '';
+
     let afterContent = '';
-    if (bug.status === 'Fixed') {
-      /* Before col */
+    if (bug.status === 'Fixed' && bug.reporter === currentName) {
       const beforeImg = bug.screenshot_url
         ? `<div class="compare-img"><img src="${esc(bug.screenshot_url)}" alt="Before" data-lightbox="${esc(bug.screenshot_url)}"></div>
-           <div class="compare-note">Submitted by you · ${timeAgo(bug.created_at)}</div>`
+           <div class="compare-note">Submitted by ${esc(bug.reporter)} · ${timeAgo(bug.created_at)}</div>`
         : `<div class="compare-img">${PLACEHOLDER_SVG}</div>
            <div class="compare-note">No screenshot uploaded</div>`;
 
-      /* After col (fixer screenshot not in DB) */
-      const afterImg = `<div class="compare-img">${PLACEHOLDER_SVG}</div>
-        <div class="compare-note">Fixer screenshot not uploaded yet</div>`;
+      const afterImg = bug.fix_screenshot_url
+        ? `<div class="compare-img"><img src="${esc(bug.fix_screenshot_url)}" alt="After" data-lightbox="${esc(bug.fix_screenshot_url)}"></div>
+           <div class="compare-note">Fixer screenshot</div>`
+        : `<div class="compare-img">${PLACEHOLDER_SVG}</div>
+           <div class="compare-note">Fixer screenshot not uploaded yet</div>`;
 
-      /* Fix notes */
       const fixNotesSection = bug.fix_notes
         ? `<div class="fix-notes-section">
              <div class="fix-notes-label">Fix notes</div>
@@ -1282,11 +1892,7 @@
            </div>`
         : '';
 
-      /* Footer: already Verified? */
-      const verifyFooter = bug.status === 'Verified'
-        ? `<span class="verified-badge"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>Verified by you</span>
-           <span class="verify-hint" style="margin-left:8px">Thank you for confirming</span>`
-        : `<button class="verify-btn" data-verify-id="${bug.id}">&#10003; Mark as verified</button>
+      const verifyFooter = `<button class="verify-btn" data-verify-id="${bug.id}">&#10003; Mark as verified</button>
            <span class="verify-hint">Confirms the bug is resolved on your end</span>`;
 
       afterContent = `
@@ -1297,7 +1903,7 @@
           </div>
           <div class="compare-grid">
             <div class="compare-col">
-              <div class="compare-label before">Before (your screenshot)</div>
+              <div class="compare-label before">Before (reporter screenshot)</div>
               ${beforeImg}
             </div>
             <div class="compare-col">
@@ -1311,7 +1917,6 @@
           </div>
         </div>`;
     } else {
-      /* Non-Fixed: plain expand with fix notes if any */
       let expandInner = '';
       if (isExp) {
         const ss = bug.screenshot_url
@@ -1328,62 +1933,38 @@
     return `
       <div class="bug-row${isNew ? ' new-row' : ''}" data-id="${bug.id}">
         <div class="bug-row-main${isExp ? ' expanded' : ''}" data-row-id="${bug.id}">
-          <div class="bug-icon">
-            <svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="2"/>
-              <path d="M5 8h6M5 5.5h6M5 10.5h4" stroke-linecap="round"/></svg>
-          </div>
+          <span class="bug-lead-dot ${sc}" aria-hidden="true"></span>
           <div class="bug-body">
             <div class="bug-title">${esc(bug.title)}</div>
-            <div class="bug-tags">${modTags}${statusTag}</div>
+            <div class="bug-meta">${metaHTML}</div>
           </div>
-          <div class="bug-time">${timeAgo(bug.created_at)}</div>
+          ${actionHint}
+          <span class="bug-time">${timeAgo(bug.created_at)}</span>
           <svg class="chevron" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
         ${afterContent}
       </div>`;
   }
 
-  function bindFeedEvents() {
-    /* Group row toggle */
-    feedEl.querySelectorAll('.group-row').forEach(row => {
-      row.addEventListener('click', () => {
-        const wrap = row.closest('.group-wrap');
-        const key  = wrap.dataset.dateKey;
-        const body = wrap.querySelector('.group-body');
-        if (collapsedGroups.has(key)) {
-          collapsedGroups.delete(key);
-          body.classList.remove('collapsed');
-        } else {
-          collapsedGroups.add(key);
-          body.classList.add('collapsed');
-        }
-      });
-    });
-
-    /* Bug row click → expand/collapse */
-    feedEl.querySelectorAll('.bug-row-main').forEach(rowMain => {
+  function bindListEvents(container) {
+    container.querySelectorAll('.bug-row-main').forEach(rowMain => {
       rowMain.addEventListener('click', e => {
         if (e.target.closest('[data-lightbox]') || e.target.closest('.verify-btn')) return;
         const id = rowMain.dataset.rowId;
-        if (expandedIds.has(id)) {
-          expandedIds.delete(id);
-        } else {
-          expandedIds.add(id);
-        }
-        renderFeed();
+        if (expandedIds.has(id)) expandedIds.delete(id);
+        else expandedIds.add(id);
+        renderBugs();
       });
     });
 
-    /* Verify buttons */
-    feedEl.querySelectorAll('.verify-btn').forEach(btn => {
+    container.querySelectorAll('.verify-btn').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
         handleVerify(btn.dataset.verifyId, btn);
       });
     });
 
-    /* Lightbox triggers */
-    feedEl.querySelectorAll('[data-lightbox]').forEach(el => {
+    container.querySelectorAll('[data-lightbox]').forEach(el => {
       el.addEventListener('click', e => {
         e.stopPropagation();
         lightboxImg.src = el.dataset.lightbox;
@@ -1392,8 +1973,87 @@
     });
   }
 
+  /* ---- Kanban View ---- */
+  function renderKanbanView(bugs, meta) {
+    if (bugs.length === 0) {
+      kanbanViewEl.innerHTML = `
+        <div class="empty-state">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.35">
+            <circle cx="18" cy="18" r="14"/>
+            <path d="M12 15c0-1.5 1.5-3 3-3s3 1.5 3 3" stroke-linecap="round"/>
+            <path d="M18 15c0-1.5 1.5-3 3-3s3 1.5 3 3" stroke-linecap="round"/>
+            <path d="M12 24c1.5 2.5 4 3.5 6 3.5s4.5-1 6-3.5" stroke-linecap="round"/>
+          </svg>
+          <p class="empty-title">${esc(meta.empty)}</p>
+          <p class="empty-desc">${esc(meta.emptySub)}</p>
+        </div>`;
+      return;
+    }
+
+    // Group bugs by status
+    const byStatus = {};
+    KANBAN_STATUSES.forEach(s => { byStatus[s] = []; });
+    bugs.forEach(b => {
+      if (byStatus[b.status]) byStatus[b.status].push(b);
+    });
+
+    let html = '<div class="kanban-board">';
+    KANBAN_STATUSES.forEach(status => {
+      const sc = statusClass(status);
+      const col = byStatus[status];
+      html += `
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            <span class="status-pill ${sc}"><span class="dot"></span>${esc(status)}</span>
+            <span class="kanban-col-count">${col.length}</span>
+          </div>
+          <div class="kanban-col-body">`;
+
+      if (col.length === 0) {
+        html += `<div style="padding:16px 8px;text-align:center;font-size:11px;color:var(--text-tertiary)">No bugs</div>`;
+      } else {
+        col.forEach(bug => {
+          const modTag = bug.module
+            ? `<span class="tag">${esc(topModule(bug.module))}</span>`
+            : '';
+          const reporterTag = `<span class="tag tag-reporter">${esc(bug.reporter || '?')}</span>`;
+          html += `
+            <div class="kanban-card" data-card-id="${bug.id}">
+              <div class="kanban-card-id">${esc(bug.bug_id || '')}</div>
+              <div class="kanban-card-title">${esc(bug.title)}</div>
+              <div class="kanban-card-meta">
+                ${reporterTag}${modTag}
+                <span class="kanban-card-time">${timeAgo(bug.created_at)}</span>
+              </div>
+            </div>`;
+        });
+      }
+
+      html += `</div></div>`;
+    });
+    html += '</div>';
+
+    kanbanViewEl.innerHTML = html;
+
+    // Kanban card click → switch to list + expand
+    kanbanViewEl.querySelectorAll('.kanban-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const id = card.dataset.cardId;
+        expandedIds.add(id);
+        viewMode = 'list';
+        document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === 'list'));
+        renderBugs();
+        // Scroll to the expanded row
+        setTimeout(() => {
+          const row = document.querySelector(`.bug-row[data-id="${id}"]`);
+          if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 50);
+      });
+    });
+  }
+
   /* ============================================================
-     11. Mark as verified
+     13. Mark as verified
      ============================================================ */
   async function handleVerify(id, btn) {
     if (!id) return;
@@ -1404,7 +2064,6 @@
       const { error } = await sb.from('bugs').update({ status: 'Verified' }).eq('id', id);
       if (error) throw error;
 
-      /* Optimistic update */
       const i = myBugs.findIndex(b => String(b.id) === String(id));
       if (i !== -1) myBugs[i] = { ...myBugs[i], status: 'Verified' };
       const ai = allBugs.findIndex(b => String(b.id) === String(id));
@@ -1413,7 +2072,7 @@
       showToast('Marked as verified');
       updateBadges();
       renderModuleProgress();
-      renderFeed();
+      renderBugs();
 
     } catch (err) {
       console.error(err);
@@ -1424,37 +2083,37 @@
   }
 
   /* ============================================================
-     12. Realtime
+     14. Realtime — listen to ALL bugs, not just current user
      ============================================================ */
   function setupRealtime() {
     if (channel) sb.removeChannel(channel);
-    channel = sb.channel(`reporter-${currentName}`)
+    channel = sb.channel('reporter-all-bugs')
       .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'bugs',
-        filter: `reporter=eq.${currentName}`
+        event: '*', schema: 'public', table: 'bugs'
       }, payload => {
         const { eventType, new: n, old: o } = payload;
         if (eventType === 'INSERT') {
-          if (!myBugs.find(b => b.id === n.id)) { myBugs.unshift(n); allBugs.unshift(n); }
+          if (!allBugs.find(b => b.id === n.id)) allBugs.unshift(n);
+          if (n.reporter === currentName && !myBugs.find(b => b.id === n.id)) myBugs.unshift(n);
         } else if (eventType === 'UPDATE') {
-          const i  = myBugs.findIndex(b => b.id === n.id);
-          if (i  !== -1) myBugs[i]  = { ...myBugs[i],  ...n };
           const ai = allBugs.findIndex(b => b.id === n.id);
           if (ai !== -1) allBugs[ai] = { ...allBugs[ai], ...n };
+          const i = myBugs.findIndex(b => b.id === n.id);
+          if (i !== -1) myBugs[i] = { ...myBugs[i], ...n };
         } else if (eventType === 'DELETE') {
-          myBugs  = myBugs.filter(b => b.id !== o.id);
           allBugs = allBugs.filter(b => b.id !== o.id);
+          myBugs  = myBugs.filter(b => b.id !== o.id);
           expandedIds.delete(String(o.id));
         }
         updateBadges();
         renderModuleProgress();
-        renderFeed();
+        renderBugs();
       })
       .subscribe();
   }
 
   /* ============================================================
-     13. Lightbox
+     15. Lightbox
      ============================================================ */
   lightbox.addEventListener('click', () => {
     lightbox.classList.remove('show');
@@ -1462,13 +2121,13 @@
   });
 
   /* ============================================================
-     14. Offline
+     16. Offline
      ============================================================ */
   window.addEventListener('offline', () => $('offline-banner').classList.add('show'));
   window.addEventListener('online',  () => $('offline-banner').classList.remove('show'));
 
   /* ============================================================
-     15. Init
+     17. Init
      ============================================================ */
   async function initApp() {
     const initial = currentName.charAt(0).toUpperCase();
@@ -1481,11 +2140,10 @@
 
     await Promise.all([loadMyBugs(), loadAllBugs()]);
     renderModuleProgress();
-    renderFeed();
+    renderBugs();
     setupRealtime();
   }
 
-  /* Auto-login if name saved */
   if (currentName) {
     pickerEl.style.display = 'none';
     initApp();
