@@ -106,6 +106,13 @@
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .toast.error { background: var(--red); }
+  .toast.with-action { padding: 8px 8px 8px 16px; display: flex; align-items: center; gap: 12px; }
+  .toast-undo-btn {
+    background: transparent; color: var(--bg-primary); border: 0.5px solid color-mix(in srgb, var(--bg-primary) 40%, transparent);
+    padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 500;
+    cursor: pointer; letter-spacing: 0.02em;
+  }
+  .toast-undo-btn:hover { background: color-mix(in srgb, var(--bg-primary) 15%, transparent); }
 
   /* ── Page Layout ── */
   .page { display: flex; min-height: 100vh; }
@@ -1133,6 +1140,30 @@
 <script>
 (() => {
   'use strict';
+
+  /* showUndoToast — 6s toast with an Undo button. Returns a cancel() function. */
+  function showUndoToast(message, onUndo, durationMs = 6000) {
+    let toast = document.querySelector('.toast.with-action');
+    if (toast) toast.remove();
+    toast = document.createElement('div');
+    toast.className = 'toast with-action show';
+    toast.innerHTML = `<span></span><button class="toast-undo-btn" type="button">Undo</button>`;
+    toast.firstChild.textContent = message;
+    document.body.appendChild(toast);
+
+    let done = false;
+    const btn = toast.querySelector('.toast-undo-btn');
+    const finish = () => {
+      if (done) return;
+      done = true;
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 200);
+    };
+    btn.addEventListener('click', () => { if (done) return; done = true; onUndo(); finish(); });
+    const timer = setTimeout(finish, durationMs);
+
+    return () => { clearTimeout(timer); finish(); };
+  }
 
   /* ============================================================
      SUBMODULES
