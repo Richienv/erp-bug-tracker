@@ -1117,8 +1117,8 @@
       <span class="topbar-title">Bug Tracker</span>
       <span class="topbar-sub">— Fixer View</span>
       <div class="view-toggle">
-        <button class="view-btn active" id="btn-board">Board</button>
-        <button class="view-btn" id="btn-list">List</button>
+        <button class="view-btn" id="btn-board">Board</button>
+        <button class="view-btn active" id="btn-list">List</button>
       </div>
     </div>
 
@@ -1270,7 +1270,7 @@
 
   // ---- State ----
   let bugs = [];
-  let viewMode = 'board';
+  let viewMode = 'list';
   let filters = { status: null, search: '', module: null, reporter: null, category: null };
   let selectedBugId = null;
   let focusedCardIndex = -1;
