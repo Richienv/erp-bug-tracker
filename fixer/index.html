@@ -170,6 +170,18 @@
   .chip:hover { border-color: var(--border-mid); color: var(--text-primary); }
   .chip.active { background: var(--text-primary); color: var(--bg-primary); border-color: var(--text-primary); }
 
+  .status-chip-group { gap: 6px; }
+  .status-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; padding: 4px 10px;
+  }
+  .status-chip .chip-count {
+    color: var(--text-tertiary); font-size: 10.5px;
+    font-weight: 500; font-variant-numeric: tabular-nums;
+  }
+  .status-chip.active .chip-count { color: var(--bg-primary); opacity: 0.7; }
+  .status-chip.active .status-dot { box-shadow: 0 0 0 1.5px var(--bg-primary); }
+
   .sidebar-footer {
     margin-top: auto;
     padding: 12px 14px;
@@ -926,22 +938,28 @@
   }
   .list-table thead tr { border-bottom: 0.5px solid var(--border-light); }
   .list-table th {
-    padding: 9px 14px; font-size: 10.5px; font-weight: 600;
+    padding: 12px 20px; font-size: 11px; font-weight: 600;
     color: var(--text-tertiary); text-align: left;
-    text-transform: uppercase; letter-spacing: 0.06em;
+    text-transform: uppercase; letter-spacing: 0.08em;
     background: var(--bg-secondary); white-space: nowrap;
   }
   .list-table tbody tr { border-bottom: 0.5px solid var(--border-light); cursor: pointer; transition: background 0.1s; }
   .list-table tbody tr:last-child { border-bottom: none; }
   .list-table tbody tr:hover { background: var(--bg-secondary); }
   .list-table tbody tr.list-selected { background: var(--blue-bg); }
-  .list-table tbody tr.group-row { cursor: default; background: var(--bg-secondary); }
-  .list-table tbody tr.group-row:hover { background: var(--bg-secondary); }
+  .list-table tbody tr.group-row { cursor: pointer; background: var(--bg-secondary); user-select: none; }
+  .list-table tbody tr.group-row:hover { background: var(--bg-tertiary, #ececee); }
   .list-table tbody tr.group-row td {
-    padding: 8px 14px; font-size: 10.5px; font-weight: 600;
+    padding: 11px 20px; font-size: 11px; font-weight: 600;
     letter-spacing: 0.08em; text-transform: uppercase;
     color: var(--text-tertiary); border-top: 0.5px solid var(--border-light);
   }
+  .list-table tbody tr.group-row .group-caret {
+    display: inline-block; width: 10px; height: 10px; margin-right: 8px;
+    vertical-align: middle; color: var(--text-tertiary);
+    transition: transform 0.15s ease;
+  }
+  .list-table tbody tr.group-row.collapsed .group-caret { transform: rotate(-90deg); }
   .list-table tbody tr.group-row .group-dot {
     display: inline-block; width: 7px; height: 7px; border-radius: 50%;
     margin-right: 7px; vertical-align: middle;
@@ -950,10 +968,10 @@
     margin-left: 8px; color: var(--text-tertiary);
     font-weight: 500; letter-spacing: 0;
   }
-  .list-table td { padding: 9px 14px; font-size: 13px; vertical-align: middle; }
-  .list-id { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); white-space: nowrap; }
-  .list-title { color: var(--text-primary); font-weight: 500; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-  .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 500; white-space: nowrap; }
+  .list-table td { padding: 14px 20px; font-size: 14px; vertical-align: middle; }
+  .list-id { font-family: var(--font-mono); font-size: 12.5px; color: var(--text-tertiary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .list-title { color: var(--text-primary); font-weight: 500; max-width: 420px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; font-size: 14px; }
+  .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 5px; font-size: 12.5px; font-weight: 500; white-space: nowrap; }
   .badge-open     { background: var(--red-bg);    color: var(--red-text); }
   .badge-progress { background: var(--amber-bg);  color: var(--amber-text); }
   .badge-fixed    { background: var(--blue-bg);   color: var(--blue-text); }
@@ -1230,6 +1248,7 @@
   // ---- Constants ----
   const STATUSES = ['Open', 'In Progress', 'Fixed', 'Verified'];
   const ALL_STATUSES = ['Open', 'In Progress', 'Fixed', 'Verified', 'Closed'];
+  const collapsedGroups = new Set();
   const SEVERITY_ORDER = ['Low', 'Medium', 'High', 'Critical'];
 
   const STATUS_DOT_CLASS = {
@@ -1346,15 +1365,16 @@
     const counts = {};
     STATUSES.forEach(s => { counts[s] = bugs.filter(b => b.status === s).length; });
 
+    statusItemsEl.className = 'chip-group status-chip-group';
     statusItemsEl.innerHTML = STATUSES.map(s => `
-      <div class="status-item${filters.status === s ? ' active' : ''}" data-status="${esc(s)}">
+      <button type="button" class="chip status-chip${filters.status === s ? ' active' : ''}" data-status="${esc(s)}">
         <span class="status-dot ${STATUS_DOT_CLASS[s]}"></span>
-        ${esc(s)}
-        <span class="status-count">${counts[s]}</span>
-      </div>
+        <span>${esc(s)}</span>
+        <span class="chip-count">${counts[s]}</span>
+      </button>
     `).join('');
 
-    statusItemsEl.querySelectorAll('.status-item').forEach(item => {
+    statusItemsEl.querySelectorAll('.status-chip').forEach(item => {
       item.addEventListener('click', () => {
         const s = item.dataset.status;
         filters.status = filters.status === s ? null : s;
@@ -1545,16 +1565,27 @@
         currentGroup = bug.status;
         const groupCount = sorted.filter(b => b.status === currentGroup).length;
         const dotCls = STATUS_DOT_CLASS[currentGroup] || 'dot-open';
+        const isCollapsed = collapsedGroups.has(currentGroup);
         const groupTr = document.createElement('tr');
-        groupTr.className = 'group-row';
+        groupTr.className = 'group-row' + (isCollapsed ? ' collapsed' : '');
+        groupTr.dataset.groupStatus = currentGroup;
         groupTr.innerHTML = `
           <td colspan="7">
+            <svg class="group-caret" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 3.75L5 6.25l2.5-2.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span class="group-dot status-dot ${dotCls}"></span>${esc(currentGroup)}
             <span class="group-count">${groupCount}</span>
           </td>
         `;
+        const groupKey = currentGroup;
+        groupTr.addEventListener('click', () => {
+          if (collapsedGroups.has(groupKey)) collapsedGroups.delete(groupKey);
+          else collapsedGroups.add(groupKey);
+          renderList();
+        });
         tbody.appendChild(groupTr);
       }
+
+      if (collapsedGroups.has(bug.status)) return;
 
       const tr = document.createElement('tr');
       if (bug.id === selectedBugId) tr.classList.add('list-selected');
