@@ -95,6 +95,65 @@
   .lightbox.show { display: flex; }
   .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; object-fit: contain; }
 
+  /* ── Verify Confirm Modal ── */
+  .vc-overlay {
+    display: none; position: fixed; inset: 0; z-index: 130;
+    background: rgba(17, 17, 19, 0.45);
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .vc-overlay.show { display: flex; }
+  .vc-modal {
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--border-light);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    width: 100%; max-width: 640px; max-height: 90vh;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    animation: vcIn 0.18s ease-out;
+  }
+  @keyframes vcIn { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
+  .vc-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 0.5px solid var(--border-light);
+    background: var(--bg-secondary);
+  }
+  .vc-kicker { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); }
+  .vc-close { background: transparent; border: 0; font-size: 22px; line-height: 1; cursor: pointer; color: var(--text-tertiary); padding: 2px 8px; border-radius: 4px; }
+  .vc-close:hover { color: var(--text-primary); background: var(--bg-primary); }
+  .vc-body { padding: 18px 20px; overflow-y: auto; }
+  .vc-title { font-size: 18px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; line-height: 1.3; margin: 0 0 10px; }
+  .vc-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .vc-tags .vi-tag { font-size: 11px; }
+  .vc-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .vc-compare .vc-pane { background: var(--bg-secondary); border: 0.5px solid var(--border-light); border-radius: var(--radius-sm); overflow: hidden; }
+  .vc-compare .vc-pane-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: 6px 10px; border-bottom: 0.5px solid var(--border-light); }
+  .vc-compare .vc-pane-label.before { color: var(--red-text); }
+  .vc-compare .vc-pane-label.after { color: var(--green-text); }
+  .vc-compare .vc-img { width: 100%; aspect-ratio: 16/10; background: var(--bg-primary); display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); font-size: 11px; }
+  .vc-compare .vc-img img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; display: block; }
+  .vc-note {
+    font-size: 13px; color: var(--text-secondary); line-height: 1.5;
+    padding: 10px 12px; border-radius: 6px;
+    background: var(--bg-secondary); border-left: 2px solid var(--border-light);
+  }
+  .vc-note.empty { color: var(--text-tertiary); font-style: italic; background: transparent; border-left-color: transparent; padding-left: 0; }
+  .vc-footer {
+    display: flex; gap: 8px; justify-content: flex-end;
+    padding: 12px 16px; border-top: 0.5px solid var(--border-light);
+    background: var(--bg-secondary);
+  }
+  .vc-btn { font-size: 13px; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: 0.5px solid transparent; cursor: pointer; font-family: var(--font); }
+  .vc-btn.cancel { background: var(--bg-primary); color: var(--text-secondary); border-color: var(--border-light); }
+  .vc-btn.cancel:hover { color: var(--text-primary); }
+  .vc-btn.confirm { background: var(--green); color: #fff; }
+  .vc-btn.confirm:hover { filter: brightness(1.05); }
+
+  @media (max-width: 640px) {
+    .vc-compare { grid-template-columns: 1fr; }
+  }
+
   /* ── Verify Inbox ── */
   .verify-inbox {
     margin-bottom: 14px;
@@ -1035,6 +1094,26 @@
 <!-- Lightbox -->
 <div class="lightbox" id="lightbox">
   <img id="lightbox-img" src="" alt="Screenshot">
+</div>
+
+<!-- Verify Confirm Modal -->
+<div class="vc-overlay" id="vc-overlay" aria-hidden="true">
+  <div class="vc-modal" role="dialog" aria-labelledby="vc-title">
+    <header class="vc-header">
+      <span class="vc-kicker">Verify fix</span>
+      <button class="vc-close" id="vc-close" type="button" aria-label="Close">&times;</button>
+    </header>
+    <div class="vc-body">
+      <h2 class="vc-title" id="vc-title"></h2>
+      <div class="vc-tags" id="vc-tags"></div>
+      <div class="vc-compare" id="vc-compare"></div>
+      <div class="vc-note" id="vc-note"></div>
+    </div>
+    <footer class="vc-footer">
+      <button class="vc-btn cancel" id="vc-cancel" type="button">Cancel</button>
+      <button class="vc-btn confirm" id="vc-confirm" type="button">&#10003; Mark as verified</button>
+    </footer>
+  </div>
 </div>
 
 <!-- Report Bug Modal -->
@@ -2105,7 +2184,7 @@
       if (dismiss) { viDismissed = true; sessionStorage.setItem('vi-dismissed','1'); renderVerifyInbox(); return; }
 
       const verifyBtn = e.target.closest('[data-vi-verify]');
-      if (verifyBtn) { handleVerifyInbox(verifyBtn.dataset.viVerify); return; }
+      if (verifyBtn) { openVerifyConfirm(verifyBtn.dataset.viVerify); return; }
 
       const reopenBtn = e.target.closest('[data-vi-reopen]');
       if (reopenBtn) {
@@ -2134,6 +2213,67 @@
       }
     };
   }
+
+  /* ---- Verify confirm modal ---- */
+  const vcOverlay  = document.getElementById('vc-overlay');
+  const vcTitle    = document.getElementById('vc-title');
+  const vcTagsEl   = document.getElementById('vc-tags');
+  const vcCompare  = document.getElementById('vc-compare');
+  const vcNote     = document.getElementById('vc-note');
+  const vcClose    = document.getElementById('vc-close');
+  const vcCancel   = document.getElementById('vc-cancel');
+  const vcConfirm  = document.getElementById('vc-confirm');
+  let vcCurrentId  = null;
+
+  function openVerifyConfirm(id) {
+    const bug = allBugs.find(b => String(b.id) === String(id));
+    if (!bug) return;
+    vcCurrentId = String(id);
+
+    vcTitle.textContent = bug.title || '';
+
+    const tags = [];
+    if (bug.bug_id) tags.push(`<span class="vi-tag id">${esc(bug.bug_id)}</span>`);
+    if (bug.module) tags.push(`<span class="vi-tag">${esc(topModule(bug.module))}</span>`);
+    if (bug.reporter) tags.push(`<span class="vi-tag">${esc(bug.reporter)}</span>`);
+    vcTagsEl.innerHTML = tags.join('');
+
+    const beforeUrl = bug.screenshot_url || '';
+    const afterUrl  = bug.fix_screenshot_url || '';
+    const beforePane = beforeUrl
+      ? `<div class="vc-img"><img src="${esc(beforeUrl)}" alt="Before" data-lightbox="${esc(beforeUrl)}"></div>`
+      : `<div class="vc-img">No screenshot</div>`;
+    const afterPane = afterUrl
+      ? `<div class="vc-img"><img src="${esc(afterUrl)}" alt="After" data-lightbox="${esc(afterUrl)}"></div>`
+      : `<div class="vc-img">No fix screenshot</div>`;
+    vcCompare.innerHTML = `
+      <div class="vc-pane"><div class="vc-pane-label before">Before</div>${beforePane}</div>
+      <div class="vc-pane"><div class="vc-pane-label after">After</div>${afterPane}</div>`;
+
+    if (bug.fix_notes) { vcNote.textContent = bug.fix_notes; vcNote.classList.remove('empty'); }
+    else { vcNote.textContent = 'No fixer note'; vcNote.classList.add('empty'); }
+
+    vcOverlay.classList.add('show');
+  }
+
+  function closeVerifyConfirm() {
+    vcOverlay.classList.remove('show');
+    vcCurrentId = null;
+  }
+
+  vcClose.addEventListener('click', closeVerifyConfirm);
+  vcCancel.addEventListener('click', closeVerifyConfirm);
+  vcOverlay.addEventListener('click', (e) => { if (e.target === vcOverlay) closeVerifyConfirm(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && vcOverlay.classList.contains('show')) closeVerifyConfirm(); });
+  vcCompare.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-lightbox]');
+    if (t) { lightboxImg.src = t.dataset.lightbox; lightbox.classList.add('show'); }
+  });
+  vcConfirm.addEventListener('click', () => {
+    const id = vcCurrentId;
+    closeVerifyConfirm();
+    if (id) handleVerifyInbox(id);
+  });
 
   // stubs — filled in next tasks
   const pendingVerifies = new Map(); // id -> previous status
