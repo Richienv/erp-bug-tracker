@@ -691,9 +691,9 @@
     position: relative;
   }
   .step-modal-header {
-    padding: 14px 18px 12px; border-bottom: 0.5px solid var(--border-light);
+    padding: 16px 22px 14px; border-bottom: 0.5px solid var(--border-light);
     display: flex; align-items: center; justify-content: space-between;
-    flex-shrink: 0;
+    flex-shrink: 0; background: var(--bg-primary);
   }
   .step-modal-id {
     font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em;
@@ -725,39 +725,41 @@
   .step-kebab-item.danger:hover { background: color-mix(in srgb, var(--red) 10%, transparent); }
   .step-kebab-sep { height: 0.5px; background: var(--border-light); margin: 4px 2px; }
 
-  .step-modal-body { padding: 16px 20px 20px; overflow-y: auto; }
+  .step-modal-body { padding: 22px 26px 24px; overflow-y: auto; background: var(--bg-primary); }
 
-  .step-ctx-title { font-size: 17px; font-weight: 600; line-height: 1.35; margin-bottom: 6px; }
+  .step-ctx-title { font-size: 19px; font-weight: 600; line-height: 1.3; margin-bottom: 10px; letter-spacing: -0.01em; color: var(--text-primary); }
   .step-ctx-meta {
-    display: flex; flex-wrap: wrap; gap: 5px 10px;
-    font-size: 11.5px; color: var(--text-tertiary); margin-bottom: 12px;
+    display: flex; flex-wrap: wrap; gap: 6px;
+    font-size: 12px; color: var(--text-tertiary); margin-bottom: 18px;
     align-items: center;
   }
   .step-ctx-meta .pill {
-    padding: 2px 8px; border-radius: 999px;
-    background: var(--bg-secondary); color: var(--text-secondary);
+    padding: 3px 10px; border-radius: 999px;
+    background: var(--bg-primary); color: var(--text-secondary);
     border: 0.5px solid var(--border-light); font-weight: 500;
   }
   .step-ctx-screenshot {
-    width: 100%; max-height: 220px; object-fit: cover;
+    width: 100%; max-height: 240px; object-fit: cover;
     border-radius: 8px; border: 0.5px solid var(--border-light);
-    cursor: zoom-in; display: block; margin-bottom: 10px;
+    cursor: zoom-in; display: block; margin-bottom: 16px;
+    background: var(--bg-primary);
   }
   .step-ctx-notes {
-    font-size: 13px; line-height: 1.55; color: var(--text-secondary);
-    padding: 10px 12px; border-left: 2px solid var(--border-mid);
-    background: var(--bg-secondary); border-radius: 0 6px 6px 0;
-    white-space: pre-wrap; margin-bottom: 14px;
+    font-size: 13px; line-height: 1.6; color: var(--text-secondary);
+    padding: 12px 14px; border: 0.5px solid var(--border-light);
+    border-left: 2px solid var(--border-mid);
+    background: var(--bg-primary); border-radius: 0 8px 8px 0;
+    white-space: pre-wrap; margin-bottom: 22px;
   }
 
   .step-action-card {
-    border-top: 0.5px solid var(--border-light); padding-top: 14px; margin-top: 4px;
+    border-top: 0.5px solid var(--border-light); padding-top: 20px; margin-top: 6px;
   }
   .step-action-label {
-    font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px;
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 14px;
   }
-  .step-action-caption { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 12px; }
+  .step-action-caption { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 14px; }
 
   .step-primary-btn {
     width: 100%; padding: 12px 18px; font-size: 14px; font-weight: 600;
@@ -769,9 +771,9 @@
   .step-primary-btn.neutral { background: var(--text-primary); }
 
   .step-waiting {
-    display: flex; align-items: flex-start; gap: 10px;
-    padding: 12px 14px; border-radius: 10px;
-    background: var(--bg-secondary); border: 0.5px solid var(--border-light);
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 16px; border-radius: 10px;
+    background: var(--bg-primary); border: 0.5px solid var(--border-light);
   }
   .step-waiting-dot {
     flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%;
@@ -829,13 +831,13 @@
   }
   .step-fix-dropzone.has-image .step-fix-remove { display: flex; }
   .step-fix-notes {
-    width: 100%; min-height: 70px; padding: 10px 12px; font-size: 13px;
+    width: 100%; min-height: 76px; padding: 12px 14px; font-size: 13px;
     font-family: var(--font); border: 0.5px solid var(--border-light);
-    border-radius: 8px; background: var(--bg-secondary); outline: none;
-    resize: vertical; color: var(--text-primary); line-height: 1.5;
-    transition: border-color 0.12s, background 0.12s; margin-bottom: 12px;
+    border-radius: 8px; background: var(--bg-primary); outline: none;
+    resize: vertical; color: var(--text-primary); line-height: 1.55;
+    transition: border-color 0.12s; margin-bottom: 16px;
   }
-  .step-fix-notes:focus { border-color: var(--border-strong); background: var(--bg-primary); }
+  .step-fix-notes:focus { border-color: var(--border-strong); }
   .step-fix-notes::placeholder { color: var(--text-tertiary); }
 
   .step-modal-dropover {
