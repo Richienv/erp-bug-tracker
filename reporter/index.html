@@ -336,7 +336,7 @@
   .sidebar.collapsed .sidebar-footer-info { display: none; }
 
   /* ── Main ── */
-  .main { flex: 1; padding: 28px 32px; max-width: 1040px; overflow-y: auto; width: 100%; }
+  .main { flex: 1; padding: 28px 32px; max-width: 1400px; overflow-y: auto; width: 100%; }
   .page-header {
     display: flex; align-items: baseline; justify-content: space-between;
     gap: 12px; flex-wrap: wrap;
@@ -873,6 +873,57 @@
   .verified-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--green-text); background: var(--green-bg); padding: 5px 12px; border-radius: var(--radius-md); }
   .verified-badge svg { width: 12px; height: 12px; stroke: var(--green); fill: none; stroke-width: 2; }
   .verify-hint { font-size: 11.5px; color: var(--text-tertiary); }
+
+  /* ── List Table (All bugs) ── */
+  .list-table {
+    width: 100%; border-collapse: collapse;
+    background: var(--bg-primary); border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-md); overflow: hidden;
+  }
+  .list-table thead tr { border-bottom: 0.5px solid var(--border-light); }
+  .list-table th {
+    padding: 9px 14px; font-size: 10.5px; font-weight: 600;
+    color: var(--text-tertiary); text-align: left;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    background: var(--bg-secondary); white-space: nowrap;
+  }
+  .list-table tbody tr.lt-row { border-bottom: 0.5px solid var(--border-light); cursor: pointer; transition: background 0.1s; }
+  .list-table tbody tr.lt-row:hover { background: var(--bg-secondary); }
+  .list-table tbody tr.lt-row.expanded { background: var(--bg-secondary); }
+  .list-table tbody tr.group-row { background: var(--bg-secondary); }
+  .list-table tbody tr.group-row td {
+    padding: 8px 14px; font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-tertiary); border-top: 0.5px solid var(--border-light);
+  }
+  .list-table tbody tr.group-row .group-dot {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    margin-right: 7px; vertical-align: middle;
+  }
+  .list-table tbody tr.group-row .group-dot.s-open { background: var(--red); }
+  .list-table tbody tr.group-row .group-dot.s-in-progress { background: var(--amber); }
+  .list-table tbody tr.group-row .group-dot.s-fixed { background: var(--blue); }
+  .list-table tbody tr.group-row .group-dot.s-verified { background: var(--green); }
+  .list-table tbody tr.group-row .group-dot.s-closed { background: var(--text-tertiary); }
+  .list-table tbody tr.group-row .group-count {
+    margin-left: 8px; color: var(--text-tertiary);
+    font-weight: 500; letter-spacing: 0;
+  }
+  .list-table td { padding: 9px 14px; font-size: 13px; vertical-align: middle; }
+  .lt-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--text-tertiary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .lt-title { color: var(--text-primary); font-weight: 500; max-width: 320px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .lt-module { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+  .lt-reporter { font-size: 12px; color: var(--purple-text); font-weight: 500; white-space: nowrap; }
+  .lt-date { font-size: 12px; color: var(--text-tertiary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .lt-status-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 500; white-space: nowrap; }
+  .lt-status-pill.s-open        { background: var(--red-bg);    color: var(--red-text); }
+  .lt-status-pill.s-in-progress { background: var(--amber-bg);  color: var(--amber-text); }
+  .lt-status-pill.s-fixed       { background: var(--blue-bg);   color: var(--blue-text); }
+  .lt-status-pill.s-verified    { background: var(--green-bg);  color: var(--green-text); }
+  .lt-status-pill.s-closed      { background: var(--bg-secondary); color: var(--text-secondary); }
+  .lt-action { font-size: 11px; font-weight: 500; color: var(--blue-text); padding: 3px 8px; border-radius: 6px; background: var(--blue-bg); white-space: nowrap; }
+  .lt-expand-td { padding: 0 !important; background: var(--bg-secondary); }
+  .lt-expand-inner { padding: 14px 18px; }
 
   /* ── Kanban Board ── */
   .kanban-board {
@@ -2172,10 +2223,111 @@
       return;
     }
 
-    let html = '';
-    bugs.forEach(b => { html += bugRowHTML(b, String(b.id) === String(newId)); });
-    listViewEl.innerHTML = html;
+    // Sort by status pipeline, then newest-first within each group
+    const ALL_STATUSES_REP = ['Open', 'In Progress', 'Fixed', 'Verified', 'Closed'];
+    const rank = Object.fromEntries(ALL_STATUSES_REP.map((s, i) => [s, i]));
+    const sorted = [...bugs].sort((a, b) => {
+      const ra = rank[a.status] ?? 99, rb = rank[b.status] ?? 99;
+      if (ra !== rb) return ra - rb;
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+
+    const counts = {};
+    sorted.forEach(b => { counts[b.status] = (counts[b.status] || 0) + 1; });
+
+    let rowsHtml = '';
+    let currentGroup = null;
+    sorted.forEach(bug => {
+      if (bug.status !== currentGroup) {
+        currentGroup = bug.status;
+        const sc = statusClass(currentGroup);
+        rowsHtml += `<tr class="group-row"><td colspan="7">
+          <span class="group-dot ${sc}"></span>${esc(currentGroup)}
+          <span class="group-count">${counts[currentGroup]}</span>
+        </td></tr>`;
+      }
+      rowsHtml += bugTableRowHTML(bug, String(bug.id) === String(newId));
+    });
+
+    listViewEl.innerHTML = `
+      <table class="list-table">
+        <thead><tr>
+          <th>ID</th><th>Title</th><th>Module</th>
+          <th>Reporter</th><th>Status</th><th>Date</th><th></th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>`;
     bindListEvents(listViewEl);
+  }
+
+  function bugTableRowHTML(bug, isNew) {
+    const sc = statusClass(bug.status);
+    const isExp = expandedIds.has(String(bug.id));
+    const needsVerify = bug.status === 'Fixed' && bug.reporter === currentName;
+    const date = new Date(bug.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const modTop = bug.module ? esc(topModule(bug.module)) : '—';
+    const actionCell = needsVerify ? `<span class="lt-action">Tap to verify</span>` : '';
+
+    let expandRow = '';
+    if (isExp) {
+      expandRow = `<tr class="lt-expand-row" data-expand-for="${bug.id}">
+        <td class="lt-expand-td" colspan="7">
+          <div class="lt-expand-inner">${bugExpandContentHTML(bug)}</div>
+        </td>
+      </tr>`;
+    }
+
+    return `
+      <tr class="bug-row lt-row${isExp ? ' expanded' : ''}${isNew ? ' new-row' : ''}" data-id="${bug.id}" data-row-id="${bug.id}">
+        <td><span class="lt-id">${esc(bug.bug_id || '')}</span></td>
+        <td><span class="lt-title">${esc(bug.title)}</span></td>
+        <td><span class="lt-module">${modTop}</span></td>
+        <td><span class="lt-reporter">${esc(bug.reporter || '?')}</span></td>
+        <td><span class="lt-status-pill ${sc}"><span class="dot"></span>${esc(bug.status)}</span></td>
+        <td><span class="lt-date">${date}</span></td>
+        <td>${actionCell}</td>
+      </tr>
+      ${expandRow}`;
+  }
+
+  function bugExpandContentHTML(bug) {
+    const needsVerify = bug.status === 'Fixed' && bug.reporter === currentName;
+    if (needsVerify) {
+      const beforeImg = bug.screenshot_url
+        ? `<div class="compare-img"><img src="${esc(bug.screenshot_url)}" alt="Before" data-lightbox="${esc(bug.screenshot_url)}"></div>
+           <div class="compare-note">Submitted by ${esc(bug.reporter)} · ${timeAgo(bug.created_at)}</div>`
+        : `<div class="compare-img">${PLACEHOLDER_SVG}</div><div class="compare-note">No screenshot uploaded</div>`;
+      const afterImg = bug.fix_screenshot_url
+        ? `<div class="compare-img"><img src="${esc(bug.fix_screenshot_url)}" alt="After" data-lightbox="${esc(bug.fix_screenshot_url)}"></div>
+           <div class="compare-note">Fixer screenshot</div>`
+        : `<div class="compare-img">${PLACEHOLDER_SVG}</div><div class="compare-note">Fixer screenshot not uploaded yet</div>`;
+      const fixNotesSection = bug.fix_notes
+        ? `<div class="fix-notes-section"><div class="fix-notes-label">Fix notes</div><div class="fix-notes-text">${esc(bug.fix_notes)}</div></div>`
+        : '';
+      return `
+        <div class="verify-panel open" id="vp-${bug.id}" style="margin:0">
+          <div class="verify-panel-header">
+            <span class="verify-panel-title">Verify this fix</span>
+            <span class="verify-panel-sub">Compare before &amp; after, then confirm</span>
+          </div>
+          <div class="compare-grid">
+            <div class="compare-col"><div class="compare-label before">Before (reporter screenshot)</div>${beforeImg}</div>
+            <div class="compare-col"><div class="compare-label after">After (fixer screenshot)</div>${afterImg}</div>
+          </div>
+          ${fixNotesSection}
+          <div class="verify-footer" id="vf-${bug.id}">
+            <button class="verify-btn" data-verify-id="${bug.id}">&#10003; Mark as verified</button>
+            <span class="verify-hint">Confirms the bug is resolved on your end</span>
+          </div>
+        </div>`;
+    }
+    const ss = bug.screenshot_url
+      ? `<img class="expand-screenshot" src="${esc(bug.screenshot_url)}" alt="Screenshot" data-lightbox="${esc(bug.screenshot_url)}">`
+      : '';
+    const notes = bug.fix_notes
+      ? `<div class="expand-notes">${esc(bug.fix_notes)}</div>`
+      : `<div class="expand-notes empty">No fix notes yet</div>`;
+    return `${ss}${ss ? '<div style="height:8px"></div>' : ''}<div class="expand-label">Fix Notes</div>${notes}`;
   }
 
   function bugRowHTML(bug, isNew) {
@@ -2276,10 +2428,10 @@
   }
 
   function bindListEvents(container) {
-    container.querySelectorAll('.bug-row-main').forEach(rowMain => {
-      rowMain.addEventListener('click', e => {
+    container.querySelectorAll('.lt-row').forEach(row => {
+      row.addEventListener('click', e => {
         if (e.target.closest('[data-lightbox]') || e.target.closest('.verify-btn')) return;
-        const id = rowMain.dataset.rowId;
+        const id = row.dataset.rowId;
         if (expandedIds.has(id)) expandedIds.delete(id);
         else expandedIds.add(id);
         renderBugs();
