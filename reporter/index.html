@@ -121,10 +121,10 @@
     grid-template-columns: auto 1fr auto;
     gap: 14px;
     align-items: center;
-    padding: 12px 14px;
+    padding: 14px 16px;
     border-top: 0.5px solid var(--border-light);
     transition: opacity 0.2s, transform 0.2s, max-height 0.2s;
-    max-height: 200px; overflow: hidden;
+    max-height: 240px; overflow: hidden;
   }
   .vi-card:first-of-type { border-top: 0; }
   .vi-card.verifying { opacity: 0; transform: translateX(14px); max-height: 0; padding-top: 0; padding-bottom: 0; border-top-width: 0; }
@@ -144,9 +144,33 @@
   }
 
   .vi-body { min-width: 0; }
-  .vi-title { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .vi-note { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .vi-note.empty { color: var(--text-tertiary); font-style: italic; }
+  .vi-title {
+    font-size: 15px; font-weight: 600; color: var(--text-primary);
+    letter-spacing: -0.01em; line-height: 1.3;
+    margin-bottom: 5px;
+    overflow: hidden; text-overflow: ellipsis;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  .vi-tags {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    font-size: 11px; margin-bottom: 6px;
+  }
+  .vi-tag {
+    padding: 2px 7px; border-radius: 4px;
+    background: var(--bg-secondary); color: var(--text-secondary);
+    border: 0.5px solid var(--border-light);
+    font-weight: 500; white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .vi-tag.id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px; color: var(--text-tertiary); }
+  .vi-note {
+    font-size: 12.5px; color: var(--text-secondary); line-height: 1.45;
+    padding: 7px 10px; border-radius: 6px;
+    background: var(--bg-secondary); border-left: 2px solid var(--border-mid, var(--border-light));
+    overflow: hidden; text-overflow: ellipsis;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  .vi-note.empty { color: var(--text-tertiary); font-style: italic; background: transparent; border-left-color: transparent; padding-left: 0; }
 
   .vi-actions { display: flex; gap: 6px; }
   .vi-btn {
@@ -2043,11 +2067,17 @@
         ? `<div class="vi-note">${esc(b.fix_notes)}</div>`
         : `<div class="vi-note empty">No fixer note</div>`;
 
+      const tags = [];
+      if (b.bug_id) tags.push(`<span class="vi-tag id">${esc(b.bug_id)}</span>`);
+      if (b.module) tags.push(`<span class="vi-tag">${esc(topModule(b.module))}</span>`);
+      const tagsHTML = tags.length ? `<div class="vi-tags">${tags.join('')}</div>` : '';
+
       return `
         <div class="vi-card" data-vi-id="${b.id}">
           <div class="vi-thumbs">${beforeThumb}${afterThumb}</div>
           <div class="vi-body">
-            <div class="vi-title">${esc(b.bug_id ? b.bug_id + ' · ' : '')}${esc(b.title)}</div>
+            <div class="vi-title">${esc(b.title)}</div>
+            ${tagsHTML}
             ${noteHTML}
           </div>
           <div class="vi-actions">
